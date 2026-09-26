@@ -113,6 +113,13 @@ summary{cursor:pointer;font:700 14px var(--narrow);letter-spacing:.08em;text-tra
 details p,details li{font-size:14px;color:var(--muted);max-width:62ch}
 details ul{padding-left:18px;margin:8px 0}
 .col{display:grid;gap:20px;min-width:0}
+.intro{display:grid;gap:14px}
+@media (min-width:900px){.intro{grid-column:1/-1}}
+.lead{margin:0;font-size:16px;line-height:1.55;max-width:70ch;color:var(--ink)}
+.quick{display:grid;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+@media (min-width:700px){.quick{grid-template-columns:auto 1fr;align-items:start;gap:24px}}
+.isorow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+
 .offline{gap:10px}
 .offhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .pill{font:700 12px/1 var(--narrow);letter-spacing:.08em;text-transform:uppercase;padding:6px 9px;border-radius:999px;background:var(--sunken);color:var(--muted)}
@@ -188,6 +195,28 @@ html{scroll-behavior:smooth}
     <a class="jump" href="#guide">Инструкция</a>
   </header>
 
+  <section class="intro" aria-label="Быстрый старт">
+    <p class="lead">Экспонометр для плёночного Зоркого-С, у которого нет своего замера света. Сфотографируйте сюжет телефоном: страница возьмёт из снимка замер телефона и пересчитает его в выдержку и диафрагму для вашей плёнки и объектива. Она подскажет пару под сюжет (портрет, движение, пейзаж) и объяснит, почему выбрала именно её.</p>
+    <div class="quick">
+      <div class="field">
+        <span class="label">1 · Плёнка, ISO</span>
+        <div class="isorow"><div class="chips" id="isoChips"></div><label for="isoCustom" class="label" style="letter-spacing:.06em">Своя</label><input type="number" id="isoCustom" min="3" max="6400" step="1" inputmode="numeric"></div>
+      </div>
+      <div class="field">
+        <span class="label">2 · Снимок сюжета</span>
+        <div class="row">
+          <label class="btn primary">Выбрать фото
+            <input type="file" id="pick" accept="image/jpeg,image/*">
+          </label>
+          <label class="btn">Снять со страницы
+            <input type="file" id="shoot" accept="image/*" capture="environment">
+          </label>
+        </div>
+        <span class="fhint">На iPhone снимайте приложением «Камера» и выбирайте фото: снимок со страницы приходит без данных о выдержке.</span>
+      </div>
+    </div>
+  </section>
+
   <div class="col">
     <section class="readout" aria-live="polite">
       <div class="label">Установите на камере</div>
@@ -225,16 +254,8 @@ html{scroll-behavior:smooth}
       </div>
 
       <div id="panePhoto" class="field">
-        <div class="row">
-          <label class="btn primary">Выбрать фото
-            <input type="file" id="pick" accept="image/jpeg,image/*">
-          </label>
-          <label class="btn">Снять со страницы
-            <input type="file" id="shoot" accept="image/*" capture="environment">
-          </label>
-        </div>
         <div class="stage" id="stage">
-          <div class="empty" id="empty">Сфотографируйте сюжет приложением «Камера», затем нажмите «Выбрать фото». Страница прочитает выдержку, диафрагму и ISO телефона и пересчитает их для вашей плёнки. Коснитесь снимка, чтобы замерить точку.</div>
+          <div class="empty" id="empty">Здесь появится снимок. Выберите фото вверху страницы: страница прочитает выдержку, диафрагму и ISO телефона и пересчитает их для вашей плёнки. Коснитесь снимка, чтобы замерить точку.</div>
           <canvas id="cv" hidden aria-label="Снимок для замера"></canvas>
         </div>
         <div class="seg" role="group" aria-label="Зона замера">
@@ -263,11 +284,6 @@ html{scroll-behavior:smooth}
 
   <div class="col">
     <section class="panel">
-      <div class="field">
-        <span class="label">Плёнка, ISO</span>
-        <div class="chips" id="isoChips"></div>
-        <div class="row"><label for="isoCustom" class="label" style="letter-spacing:.06em">Своя</label><input type="number" id="isoCustom" min="3" max="6400" step="1" inputmode="numeric"></div>
-      </div>
       <div class="field">
         <label class="label" for="lens">Объектив</label>
         <select id="lens">
@@ -934,6 +950,7 @@ for(let i=0;i<256;i++){const c=i/255; LIN[i]= c<=0.04045? c/12.92 : Math.pow((c+
 
 async function loadFile(file){
   if(!file) return;
+  if($("panePhoto").hidden) setTab("photo");
   const msg=$("photoMsg"); msg.hidden=true;
   let buf; try{ buf = await file.arrayBuffer(); }catch(e){ showMsg("Не получилось прочитать файл."); return; }
   const exif = readExif(buf);
@@ -952,6 +969,7 @@ async function loadFile(file){
     S.det=null; S.faces=[]; S.light=analyzeLight(S.img,null); S.sceneAuto=classify(); S.pick=null;
     meter();
     runDetect();
+    try{ document.querySelector('.readout').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'start'}); }catch(e){}
   };
   im.onerror = () => { URL.revokeObjectURL(url); showMsg("Браузер не смог открыть этот формат (возможно, HEIC). Попробуйте другой снимок или включите в настройках камеры формат «Наиболее совместимый»."); };
   im.src=url;
