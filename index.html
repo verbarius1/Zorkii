@@ -44,7 +44,7 @@ img{max-width:100%}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);padding-inline:16px;padding-block:20px 40px}
 .wrap{max-width:1040px;margin:0 auto;display:grid;gap:20px}
-@media (min-width:900px){.wrap{grid-template-columns:1.05fr 1fr;align-items:start}.head{grid-column:1/-1}}
+@media (min-width:900px){.wrap{grid-template-columns:1fr 1fr;grid-template-areas:"head head" "intro intro" "a b" "c b" "g g";align-items:start}.head{grid-area:head}.intro{grid-area:intro}.colA{grid-area:a}.colB{grid-area:b;position:sticky;top:12px}.colC{grid-area:c}.colG{grid-area:g}}
 .head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .head h1{margin:0;font:700 26px/1.1 var(--narrow);letter-spacing:.02em;text-wrap:balance}
 .head .sub{color:var(--muted);font:14px var(--narrow);letter-spacing:.06em;text-transform:uppercase}
@@ -113,9 +113,7 @@ summary{cursor:pointer;font:700 14px var(--narrow);letter-spacing:.08em;text-tra
 details p,details li{font-size:14px;color:var(--muted);max-width:62ch}
 details ul{padding-left:18px;margin:8px 0}
 .col{display:grid;gap:20px;min-width:0}
-.intro{display:grid;gap:14px}
-@media (min-width:900px){.intro{grid-column:1/-1}}
-.lead{margin:0;font-size:16px;line-height:1.55;max-width:70ch;color:var(--ink)}
+.intro{margin:0;font-size:16px;line-height:1.55;max-width:70ch;color:var(--ink)}
 .quick{display:grid;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
 @media (min-width:700px){.quick{grid-template-columns:auto 1fr;align-items:start;gap:24px}}
 .isorow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
@@ -195,15 +193,20 @@ html{scroll-behavior:smooth}
     <a class="jump" href="#guide">Инструкция</a>
   </header>
 
-  <section class="intro" aria-label="Быстрый старт">
-    <p class="lead">Экспонометр для плёночного Зоркого-С, у которого нет своего замера света. Сфотографируйте сюжет телефоном: страница возьмёт из снимка замер телефона и пересчитает его в выдержку и диафрагму для вашей плёнки и объектива. Она подскажет пару под сюжет (портрет, движение, пейзаж) и объяснит, почему выбрала именно её.</p>
-    <div class="quick">
+  <p class="intro">Экспонометр для плёночного Зоркого-С, у которого нет своего замера света. Сфотографируйте сюжет телефоном: страница возьмёт из снимка замер телефона и пересчитает его в выдержку и диафрагму для вашей плёнки и объектива. Она подскажет пару под сюжет (портрет, движение, пейзаж) и объяснит, почему выбрала именно её.</p>
+
+  <div class="col colA">
+    <section class="panel meas" aria-label="Замер">
       <div class="field">
-        <span class="label">1 · Плёнка, ISO</span>
+        <span class="label">Плёнка, ISO</span>
         <div class="isorow"><div class="chips" id="isoChips"></div><label for="isoCustom" class="label" style="letter-spacing:.06em">Своя</label><input type="number" id="isoCustom" min="3" max="6400" step="1" inputmode="numeric"></div>
       </div>
-      <div class="field">
-        <span class="label">2 · Снимок сюжета</span>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tabPhoto" aria-selected="true">Замер по фото</button>
+        <button role="tab" id="tabPreset" aria-selected="false">По условиям</button>
+      </div>
+
+      <div id="panePhoto" class="field">
         <div class="row">
           <label class="btn primary">Выбрать фото
             <input type="file" id="pick" accept="image/jpeg,image/*">
@@ -213,11 +216,35 @@ html{scroll-behavior:smooth}
           </label>
         </div>
         <span class="fhint">На iPhone снимайте приложением «Камера» и выбирайте фото: снимок со страницы приходит без данных о выдержке.</span>
+        <div class="stage" id="stage">
+          <div class="empty" id="empty">Здесь появится снимок. Страница прочитает из него выдержку, диафрагму и ISO телефона и пересчитает их для вашей плёнки. Коснитесь снимка, чтобы замерить точку.</div>
+          <canvas id="cv" hidden aria-label="Снимок для замера"></canvas>
+        </div>
+        <div class="seg" role="group" aria-label="Зона замера">
+          <button id="mAvg" aria-pressed="true">Центр-взвеш.</button>
+          <button id="mCtr" aria-pressed="false">Центр 10%</button>
+          <button id="mSpot" aria-pressed="false">Точка</button>
+        </div>
+        <p class="zcap" id="zcap"></p>
+        <div class="exif" id="exif"></div>
+        <div class="msg" id="photoMsg" hidden></div>
+        <form class="manual" id="manual" hidden>
+          <p>iPhone часто убирает эти данные при передаче снимка на страницу, но в приложении «Фото» они есть. Откройте этот снимок в «Фото» и смахните вверх: под фото будут строчки вроде «ƒ1.78 · 1/120 с · ISO 50». Впишите их сюда.</p>
+          <div class="mrow">
+            <label for="mT">Выдержка</label><input id="mT" inputmode="decimal" placeholder="1/120" autocomplete="off">
+            <label for="mN">ƒ</label><input id="mN" inputmode="decimal" placeholder="1.78" autocomplete="off">
+            <label for="mI">ISO</label><input id="mI" inputmode="numeric" placeholder="50" autocomplete="off">
+          </div>
+          <button class="btn primary" type="submit">Посчитать</button>
+          <div class="merr" id="mErr" hidden></div>
+        </form>
       </div>
-    </div>
-  </section>
 
-  <div class="col">
+      <div id="panePreset" class="presets" hidden></div>
+    </section>
+  </div>
+
+  <div class="col colB">
     <section class="readout" aria-live="polite">
       <div class="label">Установите на камере</div>
       <div class="main">
@@ -246,43 +273,9 @@ html{scroll-behavior:smooth}
         </dl>
       </details>
     </section>
-
-    <section class="panel">
-      <div class="tabs" role="tablist">
-        <button role="tab" id="tabPhoto" aria-selected="true">Замер по фото</button>
-        <button role="tab" id="tabPreset" aria-selected="false">По условиям</button>
-      </div>
-
-      <div id="panePhoto" class="field">
-        <div class="stage" id="stage">
-          <div class="empty" id="empty">Здесь появится снимок. Выберите фото вверху страницы: страница прочитает выдержку, диафрагму и ISO телефона и пересчитает их для вашей плёнки. Коснитесь снимка, чтобы замерить точку.</div>
-          <canvas id="cv" hidden aria-label="Снимок для замера"></canvas>
-        </div>
-        <div class="seg" role="group" aria-label="Зона замера">
-          <button id="mAvg" aria-pressed="true">Центр-взвеш.</button>
-          <button id="mCtr" aria-pressed="false">Центр 10%</button>
-          <button id="mSpot" aria-pressed="false">Точка</button>
-        </div>
-        <p class="zcap" id="zcap"></p>
-        <div class="exif" id="exif"></div>
-        <div class="msg" id="photoMsg" hidden></div>
-        <form class="manual" id="manual" hidden>
-          <p>iPhone часто убирает эти данные при передаче снимка на страницу, но в приложении «Фото» они есть. Откройте этот снимок в «Фото» и смахните вверх: под фото будут строчки вроде «ƒ1.78 · 1/120 с · ISO 50». Впишите их сюда.</p>
-          <div class="mrow">
-            <label for="mT">Выдержка</label><input id="mT" inputmode="decimal" placeholder="1/120" autocomplete="off">
-            <label for="mN">ƒ</label><input id="mN" inputmode="decimal" placeholder="1.78" autocomplete="off">
-            <label for="mI">ISO</label><input id="mI" inputmode="numeric" placeholder="50" autocomplete="off">
-          </div>
-          <button class="btn primary" type="submit">Посчитать</button>
-          <div class="merr" id="mErr" hidden></div>
-        </form>
-      </div>
-
-      <div id="panePreset" class="presets" hidden></div>
-    </section>
   </div>
 
-  <div class="col">
+  <div class="col colC">
     <section class="panel">
       <div class="field">
         <label class="label" for="lens">Объектив</label>
@@ -310,7 +303,9 @@ html{scroll-behavior:smooth}
       <div class="row"><button class="btn" type="button" id="offBtn">Сохранить для работы без сети</button></div>
       <div class="bar" id="offBar" hidden><span id="offFill"></span></div>
     </section>
+  </div>
 
+  <div class="col colG">
     <section class="panel guide" id="guide" aria-labelledby="guideTitle">
       <h2 id="guideTitle">Инструкция</h2>
 
