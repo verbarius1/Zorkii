@@ -38,9 +38,11 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);padding-inl
 .readout{background:var(--dial);color:var(--dial-ink);border-radius:14px;padding:18px 16px 16px;display:grid;gap:14px}
 .readout .label{color:var(--dial-dim)}
 .main{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-.main .big{font:400 clamp(30px,8.6vw,60px)/1 var(--mono);white-space:nowrap;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.readout{container-type:inline-size}
+.main .big{font:400 clamp(30px,8.6vw,60px)/1.05 var(--mono);font-size:clamp(28px,11cqi,58px);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .main .big .sep{color:var(--dial-dim);margin:0 .12em}
-.main .big .f{color:var(--accent)}
+.main .big .f{color:var(--accent);white-space:nowrap}
+.main .big .nw{white-space:nowrap}
 .main .note{font:15px var(--narrow);letter-spacing:.04em;color:var(--dial-ink);opacity:.85}
 .srcline{font:14px/1.4 var(--sans);color:var(--dial-dim)}
 .srcline b{color:var(--dial-ink);font-weight:400}
@@ -713,11 +715,11 @@ function render(){
   // big readout
   let big, note="";
   if(rec==="B"){
-    big=`B ${fmtTime(r.B.needB?r.B.tBc:r.B.tB)}<span class="sep">·</span><span class="f">f/${r.B.label}</span>`;
+    big=`<span class="nw">B ${fmtTime(r.B.needB?r.B.tBc:r.B.tB)}</span><span class="sep">·</span><span class="f">f/${r.B.label}</span>`;
     note = r.B.tB>1 ? `по формуле ${fmtTime(r.B.tB)}, с поправкой на плёнку` : "от руки, со штатива";
   } else {
     const c=r.cols.find(c=>c.sp===rec);
-    big=`1/${c.sp}<span class="sep">·</span><span class="f">f/${c.label}</span>`;
+    big=`<span class="nw">1/${c.sp}</span><span class="sep">·</span><span class="f">f/${c.label}</span>`;
     if(c.dev<0) note=`недодержка ${fmtThirds(-c.dev).replace("+","")} ступ.`;
     else if(c.dev>0) note=`передержка ${fmtThirds(c.dev).replace("+","")} ступ.`;
     else if(S.pick!=null) note="выбрано вручную";
