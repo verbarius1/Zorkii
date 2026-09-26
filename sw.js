@@ -1,7 +1,7 @@
 // Экспонометр Зоркого — работа без сети.
 // Страница: сначала сеть (чтобы видеть обновления), без сети — из памяти.
 // Шрифты, библиотека и модели распознавания: сначала из памяти, иначе из сети с сохранением.
-const PAGE_CACHE = "zorki-page-v3";
+const PAGE_CACHE = "zorki-page-v4";
 const ASSET_CACHE = "zorki-assets-v1";
 const PAGE_FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 
@@ -20,7 +20,8 @@ self.addEventListener("activate", (e) => {
 async function pageFirstNetwork(req) {
   const cache = await caches.open(PAGE_CACHE);
   try {
-    const res = await fetch(req);
+    // no-cache: всегда сверяемся с сайтом, чтобы обновления приходили сразу, а не через 10 минут кэша
+    const res = await fetch(req.mode === "navigate" ? req.url : req, { cache: "no-cache" });
     if (res.ok) cache.put(req.mode === "navigate" ? "./index.html" : req, res.clone());
     return res;
   } catch (err) {
