@@ -157,12 +157,6 @@ details ul{padding-left:18px;margin:8px 0}
 .zcap{margin:0;font-size:14px;line-height:1.45;color:var(--muted)}
 .zcap b{color:var(--ink)}
 
-.manual{display:grid;gap:10px;background:var(--sunken);border-radius:10px;padding:12px}
-.manual p{margin:0;font-size:14px;line-height:1.45}
-.mrow{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center}
-.mrow label{font:700 13px var(--narrow);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.mrow input{font:16px var(--mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
-.merr{font-size:13.5px;color:var(--warn)}
 
 .guide h2{margin:0;font:700 22px/1.15 var(--narrow);letter-spacing:.02em;text-wrap:balance}
 .guide h3{margin:0 0 6px;font:700 13px/1.2 var(--narrow);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
@@ -228,16 +222,6 @@ html{scroll-behavior:smooth}
         <p class="zcap" id="zcap"></p>
         <div class="exif" id="exif"></div>
         <div class="msg" id="photoMsg" hidden></div>
-        <form class="manual" id="manual" hidden>
-          <p>iPhone часто убирает эти данные при передаче снимка на страницу, но в приложении «Фото» они есть. Откройте этот снимок в «Фото» и смахните вверх: под фото будут строчки вроде «ƒ1.78 · 1/120 с · ISO 50». Впишите их сюда.</p>
-          <div class="mrow">
-            <label for="mT">Выдержка</label><input id="mT" inputmode="decimal" placeholder="1/120" autocomplete="off">
-            <label for="mN">ƒ</label><input id="mN" inputmode="decimal" placeholder="1.78" autocomplete="off">
-            <label for="mI">ISO</label><input id="mI" inputmode="numeric" placeholder="50" autocomplete="off">
-          </div>
-          <button class="btn primary" type="submit">Посчитать</button>
-          <div class="merr" id="mErr" hidden></div>
-        </form>
       </div>
 
       <div id="panePreset" class="presets" hidden></div>
@@ -351,6 +335,7 @@ html{scroll-behavior:smooth}
           <dt>Пейзаж</dt><dd>f/8–11, самая резкая область Индустара</dd>
           <dt>Обычный</dt><dd>1/100 и диафрагма, какая получится</dd>
         </dl>
+        <p>Модель знает около 80 видов объектов: людей, животных, транспорт, мяч, посуду, фрукты. Игрушки, зажигалки, фотоаппараты и многое другое она не знает и иногда принимает за похожее. Поэтому неуверенные находки помечены знаком «?», а животное или человек без лица учитываются, только если модель в них уверена. Если сюжет определён неверно, выберите его кнопкой.</p>
         <p>Под предложенной парой написано, почему выбрана именно она, и что страница заметила в свете: контровой свет, много белого, сильный контраст. Если сюжет определён неверно, выберите его кнопкой: «Авто» вернёт автоматический выбор. Если нажать выдержку на шкале, ваша пара станет главной, а совет покажет, что предложила бы страница.</p>
         <p class="muted">Поле зрения Зоркого с 50 мм уже, чем у основной камеры телефона. Снимайте для замера с зумом 2×: так в кадр попадёт примерно то же, что увидит плёнка.</p>
       </section>
@@ -401,7 +386,7 @@ html{scroll-behavior:smooth}
       <section>
         <h3>Если что-то не так</h3>
         <dl class="stack">
-          <dt>«Нет данных экспозиции»</dt><dd>на iPhone так бывает почти всегда: Safari убирает их из снимка. Откройте тот же снимок в «Фото», смахните вверх и впишите выдержку, ƒ и ISO в поля под снимком. Число ƒ у телефона не меняется, его страница запомнит.</dd>
+          <dt>«Нет данных экспозиции»</dt><dd>снимок сделан через «Снять со страницы» на iPhone, это скриншот или фото из мессенджера. Сфотографируйте сюжет приложением «Камера» и выберите это фото кнопкой «Выбрать фото».</dd>
           <dt>Снимок не открылся</dt><dd>на iPhone так бывает с форматом HEIC из галереи. Попробуйте снять заново с форматом «Наиболее совместимый» в настройках камеры.</dd>
           <dt>Пересвет в зоне</dt><dd>выберите участок потемнее или замерьте по средне-серому предмету: асфальту, траве, листве.</dd>
           <dt>У всех пар пометки</dt><dd>света слишком мало или слишком много для плёнки: смените плёнку, используйте штатив или серый фильтр.</dd>
@@ -560,6 +545,9 @@ const SCENES = {
   landscape:{name:"Пейзаж"}, general:{name:"Обычный"}
 };
 const RU = {person:"человек",bicycle:"велосипед",car:"машина",motorcycle:"мотоцикл",bus:"автобус",train:"поезд",truck:"грузовик",boat:"лодка",bird:"птица",cat:"кошка",dog:"собака",horse:"лошадь",sheep:"овца",cow:"корова","sports ball":"мяч",kite:"воздушный змей",skateboard:"скейт",surfboard:"сёрф",skis:"лыжи",snowboard:"сноуборд",frisbee:"фрисби",airplane:"самолёт",bench:"скамейка","potted plant":"растение",cup:"чашка",vase:"ваза",book:"книга",chair:"стул",umbrella:"зонт","traffic light":"светофор",bottle:"бутылка","dining table":"стол",clock:"часы",face:"лицо"};
+const ANIMALS = new Set(["bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe"]);
+const SPORT = new Set(["sports ball","kite","frisbee","skateboard","surfboard","skis","snowboard"]);
+const VEH = new Set(["bicycle","car","motorcycle","bus","train","truck","boat","airplane"]);
 const MOVERS = new Set(["bicycle","car","motorcycle","bus","train","truck","boat","bird","cat","dog","horse","sheep","cow","sports ball","kite","skateboard","surfboard","skis","snowboard","frisbee","airplane"]);
 const pct = x => Math.round(x*100)+"%";
 
@@ -608,26 +596,31 @@ function classify(){
   const movers=det.filter(d=>MOVERS.has(d.label));
   const bigPerson=people.reduce((m,d)=>Math.max(m,d.w*d.h),0);
   const bigFace=faces.reduce((m,d)=>Math.max(m,d.w*d.h),0);
-  const found=[...new Set(det.map(d=>RU[d.label]||d.label))];
+  const found=[...new Set(det.map(d=>(RU[d.label]||d.label)+(d.score<0.7?'?':'')))];
   if(faces.length && !found.includes("лицо")) found.unshift(faces.length>1?`лица (${faces.length})`:"лицо");
   if(found.length) why.push(`Нашла в кадре: ${found.slice(0,5).join(", ")}.`);
   if(S.dropped) why.push(`Похоже, в кадре только рука или часть тела без лица: человеком это не считаю.`);
+  const animals=det.filter(d=>ANIMALS.has(d.label)), sport=det.filter(d=>SPORT.has(d.label)), veh=det.filter(d=>VEH.has(d.label));
+  const name=d=>RU[d.label]||d.label, cap=t=>t[0].toUpperCase()+t.slice(1);
   let sc="general";
-  if((bigFace>0.008 || bigPerson>0.12) && people.length<=3){
+  if(sport.length || animals.length){
+    sc="action";
+    const x=(sport[0]||animals[0]);
+    why.push(sport.length ? `${cap(name(x))} в кадре: скорее всего, идёт игра или движение, нужна короткая выдержка.` : `${cap(name(x))} может в любой момент двинуться, поэтому нужна короткая выдержка.`);
+  } else if((bigFace>0.008 || bigPerson>0.12) && people.length<=3){
     sc="portrait";
     why.push(bigFace>0.008 ? `Лицо крупное (${pct(bigFace)} кадра), поэтому считаю это портретом.` : `Человек занимает ${pct(bigPerson)} кадра, поэтому считаю это портретом.`);
-  } else if(movers.length){
+  } else if(veh.length && !people.length){
     sc="action";
-    const m=movers.map(d=>RU[d.label]||d.label);
-    why.push(`${m[0][0].toUpperCase()+m[0].slice(1)} может двигаться, поэтому нужна короткая выдержка.`);
-  } else if(people.length){
+    why.push(`${cap(name(veh[0]))} может ехать, поэтому нужна короткая выдержка.`);
+  } else if(people.length || veh.length){
     sc="street";
-    why.push(`Люди в кадре небольшие (${people.length} чел.), это похоже на уличную сцену: люди идут, лучше выдержка покороче и запас резкости.`);
+    why.push(people.length ? `Люди в кадре небольшие (${people.length} чел.)${veh.length?", рядом транспорт":""}. Похоже на уличную сцену: люди идут, лучше выдержка покороче и запас резкости.` : `Транспорт в кадре, похоже на улицу.`);
   } else if(L && (L.skyish || L.topVsRest>1)){
     sc="landscape";
-    why.push("Людей и движущихся объектов нет, сверху светлое небо. Похоже на пейзаж или архитектуру.");
+    why.push("Людей, животных и транспорта нет, сверху светлое небо. Похоже на пейзаж или архитектуру.");
   } else if(S.det){
-    why.push("Людей и движущихся объектов не нашла, выбираю обычный режим.");
+    why.push("Людей, животных и транспорта не нашла, выбираю обычный режим. Предметы вроде игрушек, посуды или цветов модель часто не знает.");
   }
   S.detWhy=why;
   return sc;
@@ -652,7 +645,7 @@ function chooseByScene(r, sc){
     best = pool.length ? (pool.find(c=>c.sp===500) || pool[0]) : ok.slice().sort((a,b)=>b.sp-a.sp)[0];
     reason = best.sp>=250 ? `Для движения нужна короткая выдержка: 1/${best.sp} остановит бег и транспорт. Диафрагма подстраивается под неё.` : `Для движения света не хватает: самая короткая доступная выдержка 1/${best.sp}. Движение может смазаться, лучше снимать, когда объект движется на вас, а не поперёк кадра.`;
   } else if(sc==="street"){
-    best=ok.reduce((a,c)=>{const sc1=Math.abs(av(c.N)-av(8))+(c.sp<250?0.6:0)+(c.sp<100?1.5:0); const sa=Math.abs(av(a.N)-av(8))+(a.sp<250?0.6:0)+(a.sp<100?1.5:0); return sc1<sa?c:a;});
+    best=ok.reduce((a,c)=>{const sc1=Math.abs(av(c.N)-av(8))+(c.sp<250?1.2:0)+(c.sp<100?1.5:0); const sa=Math.abs(av(a.N)-av(8))+(a.sp<250?1.2:0)+(a.sp<100?1.5:0); return sc1<sa?c:a;});
     const d=dof(best.N,5);
     reason = `Для улицы ищу баланс: выдержка от 1/250, чтобы идущие не смазались, и диафрагма около f/8 для запаса резкости. Можно навести заранее на 5 м: при f/${best.label} резко примерно от ${mfmt(d.near)} до ${mfmt(d.far)}, и снимать, не наводясь.`;
   } else if(sc==="landscape"){
@@ -932,7 +925,14 @@ async function runDetect(){
     // Фильтр: рука или край тела без лица часто распознаётся как «человек» с низкой уверенностью.
     const inside=(f,d)=>{const cx=f.x+f.w/2, cy=f.y+f.h/2; return cx>=d.x&&cx<=d.x+d.w&&cy>=d.y&&cy<=d.y+d.h;};
     const raw=S.det;
-    S.det=raw.filter(d=> d.label==="person" ? (S.faces.some(f=>inside(f,d)) || d.score>=0.6) : d.score>=0.45);
+    S.det=raw.filter(d=>{
+      const a=d.w*d.h;
+      if(d.label==="person") return S.faces.some(f=>inside(f,d)) || d.score>=0.6;
+      if(ANIMALS.has(d.label)) return d.score>=0.65;
+      if(SPORT.has(d.label)) return d.score>=0.5;
+      if(VEH.has(d.label)) return d.score>=0.5 && a>=0.01;
+      return d.score>=0.55;
+    });
     S.dropped=raw.filter(d=>d.label==="person"&&!S.det.includes(d)).length;
     S.detStatus="done";
   }catch(e){
@@ -965,7 +965,7 @@ async function loadFile(file){
     const data=ctx.getImageData(0,0,w,h).data;
     URL.revokeObjectURL(url);
     S.img={data,w,h,exif,bitmap:off};
-    S.spot=[0.5,0.5]; S.manual=null; $("mT").value=""; $("mI").value=""; $("mN").value=store.get("phoneN",""); $("mErr").hidden=true;
+    S.spot=[0.5,0.5];
     const cv=$("cv"); cv.width=w; cv.height=h; cv.hidden=false; $("empty").hidden=true;
     S.det=null; S.faces=[]; S.dropped=0; S.light=analyzeLight(S.img,null); S.sceneAuto=classify(); S.pick=null;
     meter();
@@ -1004,12 +1004,11 @@ function meter(){
   drawOverlay(cx,cy,rCtr,rSpot);
   const e=$("exif");
   const ok = exif && exif.t>0 && exif.N>0 && exif.iso>0;
-  const src = ok ? exif : S.manual;
-  $("manual").hidden = ok;
+  const src = ok ? exif : null;
   if(!src){
     S.photoEV=null; S.source="preset";
     e.textContent = exif && (exif.make||exif.model) ? `${[exif.make,exif.model].filter(Boolean).join(" ")} · нет данных экспозиции` : "В снимке нет данных экспозиции";
-    $("photoMsg").hidden=true;
+    showMsg("В этом снимке нет выдержки и ISO телефона, поэтому свет не посчитать. Так бывает со скриншотами, фото из мессенджеров и снимками через «Снять со страницы» на iPhone. Сфотографируйте сюжет приложением «Камера» и выберите это фото. Сюжет и подсказки по свету работают и так, а пару можно взять на вкладке «По условиям».");
     render(); return;
   }
   const evCam = Math.log2(src.N*src.N/src.t) - Math.log2(src.iso/100);
@@ -1037,7 +1036,7 @@ function drawOverlay(cx,cy,rCtr,rSpot){
   // detected objects
   const boxes=[...(S.det||[]).filter(d=>d.label==="person"||MOVERS.has(d.label)), ...(S.faces||[])];
   ctx.save(); ctx.lineWidth=Math.max(1.5,I.w/400); ctx.font=`${Math.max(11,Math.round(I.w/36))}px "PT Sans Narrow",Arial,sans-serif`; ctx.textBaseline="top";
-  boxes.forEach(d=>{ const x=d.x*I.w,y=d.y*I.h,w=d.w*I.w,h=d.h*I.h; ctx.strokeStyle="rgba(255,214,90,.9)"; ctx.strokeRect(x,y,w,h); const t=(RU[d.label]||d.label)+(d.score?` ${Math.round(d.score*100)}%`:""); const tw=ctx.measureText(t).width+8, th=Math.max(14,Math.round(I.w/30)); ctx.fillStyle="rgba(0,0,0,.6)"; ctx.fillRect(x,Math.max(0,y-th),tw,th); ctx.fillStyle="#FFD65A"; ctx.fillText(t,x+4,Math.max(0,y-th)+2); });
+  boxes.forEach(d=>{ const x=d.x*I.w,y=d.y*I.h,w=d.w*I.w,h=d.h*I.h; ctx.strokeStyle="rgba(255,214,90,.9)"; ctx.strokeRect(x,y,w,h); const t=(RU[d.label]||d.label)+(d.score?`${d.score<0.7?"?":""} ${Math.round(d.score*100)}%`:""); const tw=ctx.measureText(t).width+8, th=Math.max(14,Math.round(I.w/30)); ctx.fillStyle="rgba(0,0,0,.6)"; ctx.fillRect(x,Math.max(0,y-th),tw,th); ctx.fillStyle="#FFD65A"; ctx.fillText(t,x+4,Math.max(0,y-th)+2); });
   ctx.restore();
   ctx.strokeStyle=acc; const k=I.w/40;
   ctx.beginPath(); ctx.moveTo(cx-k,cy); ctx.lineTo(cx+k,cy); ctx.moveTo(cx,cy-k); ctx.lineTo(cx,cy+k); ctx.stroke();
@@ -1067,16 +1066,6 @@ function parseT(v){
   m=v.match(/^(\d+(?:\.\d+)?)$/); if(m){const x=parseFloat(m[1]); return x>=2?1/x:x;}
   return NaN;
 }
-$("manual").addEventListener("submit",ev=>{
-  ev.preventDefault();
-  const t=parseT($("mT").value), N=parseFloat(String($("mN").value).replace(",",".").replace(/^[ƒf]\s*\/?/i,"")), iso=parseFloat(String($("mI").value).replace(/[^\d.]/g,""));
-  const err=$("mErr");
-  if(!(t>0&&t<=60)){err.textContent="Не поняла выдержку. Впишите как в «Фото»: например, 1/120.";err.hidden=false;return;}
-  if(!(N>=0.9&&N<=32)){err.textContent="Впишите число после ƒ, например 1.78.";err.hidden=false;return;}
-  if(!(iso>=10&&iso<=102400)){err.textContent="Впишите ISO числом, например 50.";err.hidden=false;return;}
-  err.hidden=true; store.set("phoneN",String(N));
-  S.manual={t,N,iso}; meter();
-});
 
 // ---------- values from iOS Shortcut: ?t=0.0004&n=1.78&iso=80 ----------
 (function fromURL(){
