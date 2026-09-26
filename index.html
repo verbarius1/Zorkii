@@ -1,3 +1,16 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1E1F1D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Экспонометр">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
 <title>Экспонометр Зоркого</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans+Narrow:wght@400;700&family=PT+Sans:wght@400;700&display=swap">
@@ -25,8 +38,11 @@
   --dial:#0A0B0A; --dial-ink:#EDECE6; --dial-dim:#6B6E67;
 }
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+img{max-width:100%}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);padding-inline:16px;padding-block:20px 40px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);padding-inline:16px;padding-block:20px 40px}
 .wrap{max-width:1040px;margin:0 auto;display:grid;gap:20px}
 @media (min-width:900px){.wrap{grid-template-columns:1.05fr 1fr;align-items:start}.head{grid-column:1/-1}}
 .head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -97,6 +113,14 @@ summary{cursor:pointer;font:700 14px var(--narrow);letter-spacing:.08em;text-tra
 details p,details li{font-size:14px;color:var(--muted);max-width:62ch}
 details ul{padding-left:18px;margin:8px 0}
 .col{display:grid;gap:20px;min-width:0}
+.offline{gap:10px}
+.offhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{font:700 12px/1 var(--narrow);letter-spacing:.08em;text-transform:uppercase;padding:6px 9px;border-radius:999px;background:var(--sunken);color:var(--muted)}
+.pill.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.pill.no{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.bar{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+
 .advice{display:grid;gap:10px;background:color-mix(in srgb,var(--dial-ink) 6%,transparent);border-radius:10px;padding:12px}
 .scenes{display:flex;flex-wrap:wrap;gap:6px}
 .scenes button{appearance:none;border:1px solid color-mix(in srgb,var(--dial-dim) 60%,transparent);background:transparent;color:var(--dial-ink);border-radius:999px;padding:7px 11px;font:700 13px/1 var(--narrow);letter-spacing:.05em;cursor:pointer}
@@ -154,6 +178,8 @@ html{scroll-behavior:smooth}
 
 @media (prefers-reduced-motion:no-preference){.cell,.tabs button,.seg button{transition:background .15s,border-color .15s}}
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header class="head">
@@ -262,6 +288,13 @@ html{scroll-behavior:smooth}
       </div>
     </section>
 
+    <section class="panel offline" aria-labelledby="offTitle">
+      <div class="offhead"><span class="label" id="offTitle">Без интернета</span><span class="pill" id="offPill">проверяю…</span></div>
+      <p class="fhint" id="offText">Нажмите один раз при хорошем интернете: страница, шрифты и распознавание сюжета (около 17 МБ) сохранятся в памяти телефона. После этого экспонометр работает без сети.</p>
+      <div class="row"><button class="btn" type="button" id="offBtn">Сохранить для работы без сети</button></div>
+      <div class="bar" id="offBar" hidden><span id="offFill"></span></div>
+    </section>
+
     <section class="panel guide" id="guide" aria-labelledby="guideTitle">
       <h2 id="guideTitle">Инструкция</h2>
 
@@ -343,6 +376,15 @@ html{scroll-behavior:smooth}
           <li>Выдержку на Зорком-С можно ставить и до, и после взвода затвора.</li>
           <li>Наводите резкость через окно дальномера, а кадрируйте через видоискатель: это разные окошки.</li>
         </ul>
+      </section>
+
+      <section>
+        <h3>Без интернета</h3>
+        <ol>
+          <li>Добавьте экспонометр на экран «Домой»: «Поделиться» → «На экран „Домой"». Открывайте его с этого ярлыка.</li>
+          <li>При хорошем интернете откройте ярлык и нажмите «Сохранить для работы без сети». Метка должна смениться на «сохранено».</li>
+          <li>Теперь всё работает без сети. Если долго не открывать приложение, iPhone может очистить память, и метка снова станет «не сохранено»: просто нажмите кнопку ещё раз, когда будет интернет.</li>
+        </ol>
       </section>
 
       <section>
@@ -1031,7 +1073,53 @@ $("manual").addEventListener("submit",ev=>{
   $("exif").textContent=`Из Команды · ${fmtTime(t)} · f/${Math.round(N*100)/100} · ISO ${Math.round(iso)} → EV₁₀₀ ${fmt1(evCam)} (средний замер телефона)`;
   try{ history.replaceState(null,"",location.pathname); }catch(e){}
 })();
+
+// ---------- offline ----------
+const FONT_CSS="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans+Narrow:wght@400;700&family=PT+Sans:wght@400;700&display=swap";
+const OFF_URLS=[MP+"/vision_bundle.mjs", MP+"/wasm/vision_wasm_internal.js", MP+"/wasm/vision_wasm_internal.wasm", OD_MODEL, FD_MODEL];
+async function offlineStatus(){
+  const pill=$("offPill");
+  if(!("serviceWorker" in navigator) || !window.caches){ pill.textContent="недоступно"; pill.className="pill no"; $("offText").textContent="Этот браузер не умеет сохранять сайты для работы без сети."; $("offBtn").hidden=true; return; }
+  try{
+    let n=0; for(const u of OFF_URLS){ if(await caches.match(u)) n++; }
+    const page=await caches.match("./index.html");
+    const full = n===OFF_URLS.length && !!page;
+    pill.textContent = full ? "сохранено" : (n||page ? "частично" : "не сохранено");
+    pill.className = "pill " + (full ? "ok" : "no");
+    if(full){ let when=""; try{ const t=localStorage.getItem("zm_offAt"); if(t) when=" "+new Date(+t).toLocaleDateString("ru-RU"); }catch(e){}
+      $("offText").textContent=`Всё сохранено${when}: экспонометр и распознавание сюжета работают без сети. Если iPhone очистит память, здесь снова появится «не сохранено».`;
+      $("offBtn").textContent="Обновить сохранённое"; }
+  }catch(e){ pill.textContent="?"; }
+}
+async function precacheAll(){
+  const btn=$("offBtn"), bar=$("offBar"), fill=$("offFill");
+  if(!navigator.onLine){ $("offText").textContent="Нет подключения к интернету. Нажмите, когда появится сеть."; return; }
+  btn.disabled=true; btn.textContent="Сохраняю…"; bar.hidden=false; fill.style.width="3%";
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sw=reg.active; if(!sw) throw new Error("no sw");
+    const ch=new MessageChannel();
+    const res=await new Promise((resolve)=>{
+      ch.port1.onmessage=(e)=>{ const m=e.data||{}; if(m.type==="progress") fill.style.width=Math.round(m.done/m.total*100)+"%"; if(m.type==="done") resolve(m); };
+      sw.postMessage({type:"precache", urls:OFF_URLS, fontCss:FONT_CSS},[ch.port2]);
+      setTimeout(()=>resolve({failed:["timeout"]}),180000);
+    });
+    fill.style.width="100%";
+    if(res.failed && res.failed.length){ $("offText").textContent="Сохранилось не всё: часть файлов не скачалась. Проверьте интернет и нажмите ещё раз."; }
+    else { try{localStorage.setItem("zm_offAt",String(Date.now()));}catch(e){} }
+  }catch(e){ $("offText").textContent="Не получилось сохранить. Обновите страницу и попробуйте ещё раз."; }
+  btn.disabled=false; btn.textContent="Сохранить для работы без сети";
+  setTimeout(()=>{bar.hidden=true;},800);
+  offlineStatus();
+}
+$("offBtn").addEventListener("click",precacheAll);
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").then(()=>offlineStatus()).catch(()=>offlineStatus());
+} else offlineStatus();
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 $("zcap").innerHTML=ZONE_CAP[S.mode];
 buildIso(); buildPresets(); render();
 })();
 </script>
+</body>
+</html>
