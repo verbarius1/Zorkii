@@ -611,6 +611,7 @@ function classify(){
   const found=[...new Set(det.map(d=>RU[d.label]||d.label))];
   if(faces.length && !found.includes("лицо")) found.unshift(faces.length>1?`лица (${faces.length})`:"лицо");
   if(found.length) why.push(`Нашла в кадре: ${found.slice(0,5).join(", ")}.`);
+  if(S.dropped) why.push(`Похоже, в кадре только рука или часть тела без лица: человеком это не считаю.`);
   let sc="general";
   if((bigFace>0.008 || bigPerson>0.12) && people.length<=3){
     sc="portrait";
@@ -928,6 +929,11 @@ async function runDetect(){
     S.det=(res.detections||[]).filter(d=>d.boundingBox&&d.categories&&d.categories[0]).map(d=>({label:d.categories[0].categoryName, score:d.categories[0].score, ...norm(d.boundingBox)}));
     S.faces=[];
     if(ml.face){ try{ const fr=ml.face.detect(I.bitmap); S.faces=(fr.detections||[]).filter(d=>d.boundingBox).map(d=>({label:"face",...norm(d.boundingBox)})); }catch(e){} }
+    // Фильтр: рука или край тела без лица часто распознаётся как «человек» с низкой уверенностью.
+    const inside=(f,d)=>{const cx=f.x+f.w/2, cy=f.y+f.h/2; return cx>=d.x&&cx<=d.x+d.w&&cy>=d.y&&cy<=d.y+d.h;};
+    const raw=S.det;
+    S.det=raw.filter(d=> d.label==="person" ? (S.faces.some(f=>inside(f,d)) || d.score>=0.6) : d.score>=0.45);
+    S.dropped=raw.filter(d=>d.label==="person"&&!S.det.includes(d)).length;
     S.detStatus="done";
   }catch(e){
     if(tok!==detToken) return;
@@ -961,7 +967,7 @@ async function loadFile(file){
     S.img={data,w,h,exif,bitmap:off};
     S.spot=[0.5,0.5]; S.manual=null; $("mT").value=""; $("mI").value=""; $("mN").value=store.get("phoneN",""); $("mErr").hidden=true;
     const cv=$("cv"); cv.width=w; cv.height=h; cv.hidden=false; $("empty").hidden=true;
-    S.det=null; S.faces=[]; S.light=analyzeLight(S.img,null); S.sceneAuto=classify(); S.pick=null;
+    S.det=null; S.faces=[]; S.dropped=0; S.light=analyzeLight(S.img,null); S.sceneAuto=classify(); S.pick=null;
     meter();
     runDetect();
     try{ document.querySelector('.readout').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'start'}); }catch(e){}
@@ -1031,7 +1037,7 @@ function drawOverlay(cx,cy,rCtr,rSpot){
   // detected objects
   const boxes=[...(S.det||[]).filter(d=>d.label==="person"||MOVERS.has(d.label)), ...(S.faces||[])];
   ctx.save(); ctx.lineWidth=Math.max(1.5,I.w/400); ctx.font=`${Math.max(11,Math.round(I.w/36))}px "PT Sans Narrow",Arial,sans-serif`; ctx.textBaseline="top";
-  boxes.forEach(d=>{ const x=d.x*I.w,y=d.y*I.h,w=d.w*I.w,h=d.h*I.h; ctx.strokeStyle="rgba(255,214,90,.9)"; ctx.strokeRect(x,y,w,h); const t=RU[d.label]||d.label; const tw=ctx.measureText(t).width+8, th=Math.max(14,Math.round(I.w/30)); ctx.fillStyle="rgba(0,0,0,.6)"; ctx.fillRect(x,Math.max(0,y-th),tw,th); ctx.fillStyle="#FFD65A"; ctx.fillText(t,x+4,Math.max(0,y-th)+2); });
+  boxes.forEach(d=>{ const x=d.x*I.w,y=d.y*I.h,w=d.w*I.w,h=d.h*I.h; ctx.strokeStyle="rgba(255,214,90,.9)"; ctx.strokeRect(x,y,w,h); const t=(RU[d.label]||d.label)+(d.score?` ${Math.round(d.score*100)}%`:""); const tw=ctx.measureText(t).width+8, th=Math.max(14,Math.round(I.w/30)); ctx.fillStyle="rgba(0,0,0,.6)"; ctx.fillRect(x,Math.max(0,y-th),tw,th); ctx.fillStyle="#FFD65A"; ctx.fillText(t,x+4,Math.max(0,y-th)+2); });
   ctx.restore();
   ctx.strokeStyle=acc; const k=I.w/40;
   ctx.beginPath(); ctx.moveTo(cx-k,cy); ctx.lineTo(cx+k,cy); ctx.moveTo(cx,cy-k); ctx.lineTo(cx,cy+k); ctx.stroke();
