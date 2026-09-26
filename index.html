@@ -44,7 +44,7 @@ img{max-width:100%}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);padding-inline:16px;padding-block:20px 40px}
 .wrap{max-width:1040px;margin:0 auto;display:grid;gap:20px}
-@media (min-width:900px){.wrap{grid-template-columns:1fr 1fr;grid-template-areas:"head head" "intro intro" "a b" "c b" "g g";align-items:start}.head{grid-area:head}.intro{grid-area:intro}.colA{grid-area:a}.colB{grid-area:b;position:sticky;top:12px}.colC{grid-area:c}.colG{grid-area:g}}
+@media (min-width:900px){.wrap{grid-template-columns:1fr 1fr;grid-template-areas:"head head" "intro intro" "a b" "c b" "j j" "g g";align-items:start}.head{grid-area:head}.intro{grid-area:intro}.colA{grid-area:a}.colB{grid-area:b;position:sticky;top:12px}.colC{grid-area:c}.colJ{grid-area:j}.colG{grid-area:g}}
 .head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .head h1{margin:0;font:700 26px/1.1 var(--narrow);letter-spacing:.02em;text-wrap:balance}
 .head .sub{color:var(--muted);font:14px var(--narrow);letter-spacing:.06em;text-transform:uppercase}
@@ -176,6 +176,45 @@ html{scroll-behavior:smooth}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
 @media (prefers-reduced-motion:no-preference){.cell,.tabs button,.seg button{transition:background .15s,border-color .15s}}
+
+/* журнал плёнки */
+.recrow{display:flex;gap:8px;flex-wrap:wrap}
+.recbtn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:10px;border:1px solid var(--accent);background:transparent;color:var(--dial-ink);border-radius:10px;padding:13px 14px;font:700 15px/1 var(--narrow);letter-spacing:.05em;text-transform:uppercase;cursor:pointer;flex:1 1 12em}
+.recbtn .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);flex:none}
+.recbtn.on{background:var(--accent);color:var(--accent-ink)}
+.recbtn.on .dot{background:var(--accent-ink);border-radius:2px}
+@keyframes recpulse{50%{opacity:.3}}
+@media (prefers-reduced-motion:no-preference){.recbtn.on .dot{animation:recpulse 1s ease-in-out infinite}}
+.recsub{appearance:none;border:1px solid color-mix(in srgb,var(--dial-dim) 60%,transparent);background:transparent;color:var(--dial-ink);border-radius:10px;padding:13px 12px;font:700 13px/1 var(--narrow);letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+.recsub:disabled{opacity:.4;cursor:default}
+.recbtn:focus-visible,.recsub:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.recmsg{margin:0;font:13px/1.45 var(--sans);color:var(--dial-dim)}
+.recmsg.alert{color:var(--warn)}
+.jh{margin:0;font:700 22px/1.15 var(--narrow);letter-spacing:.02em}
+input[type=text],textarea{font:15px/1.4 var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;max-width:100%}
+textarea{min-height:60px;resize:vertical}
+.jroll{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.jroll select{flex:1 1 14em;min-width:0}
+.jsum{display:grid;gap:6px;background:var(--sunken);border-radius:10px;padding:12px;font-size:14px;line-height:1.45}
+.jsum p{margin:0}
+.jsum .tip{color:var(--muted)}
+.jlist{display:grid;gap:10px}
+.frame{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;min-width:0}
+.fhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input.fnum{width:3em;border:1px solid transparent;background:transparent;padding:2px 4px;font:700 20px/1 var(--mono);color:var(--accent);border-radius:6px}
+input.fnum:hover{border-color:var(--line)}
+.fmeta{font:13px/1.45 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.fres{font:700 12px/1 var(--narrow);letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:999px;background:var(--sunken);color:var(--muted)}
+.fres.good{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.fres.bad{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.fdel{appearance:none;border:0;background:none;color:var(--muted);font:13px var(--sans);text-decoration:underline;cursor:pointer;margin-left:auto;padding:4px}
+.frame audio{width:100%;height:40px}
+.res,.probs{display:flex;gap:6px;flex-wrap:wrap}
+.res button,.probs button{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 11px;font:700 13px/1 var(--narrow);letter-spacing:.04em;cursor:pointer}
+.res button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.probs button[aria-pressed="true"]{background:color-mix(in srgb,var(--warn) 18%,transparent);border-color:var(--warn);color:var(--warn)}
+.frame details{padding-top:10px}
+.frame details > .field{margin-top:10px}
 </style>
 </head>
 <body>
@@ -246,6 +285,11 @@ html{scroll-behavior:smooth}
       </div>
       <div class="why" id="why"></div>
       <div class="hint" id="hint"></div>
+      <div class="recrow">
+        <button type="button" class="recbtn" id="recBtn" aria-pressed="false"><span class="dot" aria-hidden="true"></span><span id="recLbl">Кадр 1: надиктовать</span></button>
+        <button type="button" class="recsub" id="recQuiet">Без голоса</button>
+      </div>
+      <p class="recmsg" id="recMsg" aria-live="polite">Сделали кадр Зорким? Нажмите и расскажите, что снимали. Пара и номер кадра попадут в журнал сами.</p>
       <details class="gloss">
         <summary>Что такое выдержка, диафрагма и ступень</summary>
         <dl>
@@ -289,6 +333,27 @@ html{scroll-behavior:smooth}
     </section>
   </div>
 
+  <div class="col colJ">
+    <section class="panel" id="journal" aria-labelledby="jTitle">
+      <h2 class="jh" id="jTitle">Журнал плёнки</h2>
+      <p class="fhint">Каждый кадр запоминает номер, пару, сюжет и замер, а голосом можно рассказать, что и зачем снимали. Когда придут сканы, отметьте итог у каждого кадра: журнал соберёт, какие ошибки повторяются.</p>
+      <div class="jroll">
+        <select id="jRoll" aria-label="Плёнка"></select>
+        <button class="btn" type="button" id="jNew">Новая плёнка</button>
+      </div>
+      <div class="field" id="jNameWrap" hidden>
+        <label class="label" for="jName">Название плёнки</label>
+        <input type="text" id="jName" placeholder="Например: Kodak Gold 200, прогулка по центру">
+      </div>
+      <div class="jsum" id="jSum"></div>
+      <div class="row" id="jActs" hidden>
+        <button class="btn" type="button" id="jExport">Сохранить журнал файлом</button>
+        <button class="btn" type="button" id="jDelRoll">Удалить плёнку</button>
+      </div>
+      <div class="jlist" id="jList"></div>
+    </section>
+  </div>
+
   <div class="col colG">
     <section class="panel guide" id="guide" aria-labelledby="guideTitle">
       <h2 id="guideTitle">Инструкция</h2>
@@ -309,6 +374,17 @@ html{scroll-behavior:smooth}
           <li>Не трогайте экспокоррекцию в приложении камеры телефона, и не снимайте со вспышкой. Режим HDR и ночной режим лучше выключить.</li>
           <li>Выберите зону замера под снимком. Центр-взвешенный подходит для обычных сюжетов. «Центр 10%» и «Точка» нужны, когда важен один объект: лицо, освещённое окно, фигура на тёмном фоне. Коснитесь снимка, чтобы замерить именно это место.</li>
           <li>Прочитайте пару в тёмной панели и установите её на камере: выдержку головкой затвора, диафрагму кольцом объектива.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h3>Журнал плёнки</h3>
+        <ol>
+          <li>Сделали кадр Зорким — нажмите «Кадр N: надиктовать» в тёмной панели и скажите вслух, что снимали и почему поставили такую пару. Нажмите ещё раз, чтобы закончить. Номер кадра и совет экспонометра запоминаются сами. Первый раз браузер спросит доступ к микрофону.</li>
+          <li>Если говорить неудобно, нажмите «Без голоса» и допишите заметку позже.</li>
+          <li>Поставили на камере другую пару, чем советовала страница? Исправьте поле «Снято на самом деле». Номер кадра тоже можно поправить, чтобы он совпадал со счётчиком Зоркого.</li>
+          <li>Когда придут сканы, откройте у каждого кадра «Итог по скану»: удачно, так себе или брак, и что пошло не так. Сверху журнал покажет, какие ошибки повторяются и на каких кадрах, и подскажет, что поменять.</li>
+          <li>Записи хранятся только на этом телефоне. Чтобы не потерять их, нажмите «Сохранить журнал файлом»: получится одна страница со всеми заметками и голосом, её можно открыть на любом устройстве.</li>
         </ol>
       </section>
 
@@ -1134,6 +1210,284 @@ if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw.js").then(()=>offlineStatus()).catch(()=>offlineStatus());
 } else offlineStatus();
 if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+// ---------- журнал плёнки ----------
+const J_RES = {good:"Удачно", meh:"Так себе", bad:"Брак"};
+const J_PROB = {under:"Недодержка", over:"Передержка", focus:"Нерезко", blur:"Смаз", leak:"Засветка", flare:"Блик", frame:"Кадрирование"};
+const J_TIP = {
+  under:"Недодержка повторяется. Негатив любит лишний свет: поставьте экспокоррекцию +⅔…+1 или сдвиньте калибровку телефона.",
+  over:"Передержка повторяется. Проверьте, не ставите ли выдержку длиннее совета, и попробуйте калибровку −⅔.",
+  focus:"Нерезкость повторяется. Проверьте, что Индустар выдвинут и защёлкнут, и наводитесь по дальномеру на контрастной детали. Если мимо все кадры, даже далёкие, проверьте дальномер на бесконечность.",
+  blur:"Смаз повторяется. Держитесь выдержек от 1/100, спускайте плавно на выдохе, на 1/50 и длиннее ищите упор.",
+  leak:"Засветки повторяются. Заряжайте плёнку в тени и посмотрите шторки затвора на просвет: нет ли дырочек.",
+  flare:"Блики повторяются. Прикрывайте объектив ладонью со стороны солнца или наденьте бленду.",
+  frame:"Кадрирование мимо. Видоискатель смотрит не туда же, куда объектив: на близкой дистанции оставляйте запас сверху."
+};
+const J = {rolls:[], roll:store.get("roll",null), frames:[], urls:new Map(), timers:new Map(), rec:null, ok:true};
+
+const DB = (()=>{
+  let p=null;
+  function open(){
+    if(p) return p;
+    p=new Promise((res,rej)=>{
+      const q=indexedDB.open("zorki-journal",1);
+      q.onupgradeneeded=()=>{ const d=q.result; d.createObjectStore("rolls",{keyPath:"id"}); d.createObjectStore("frames",{keyPath:"id"}).createIndex("roll","roll"); };
+      q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);
+    });
+    p.catch(()=>{p=null;});
+    return p;
+  }
+  function tx(name,mode,fn){
+    return open().then(d=>new Promise((res,rej)=>{
+      const t=d.transaction(name,mode); const r=fn(t.objectStore(name));
+      t.oncomplete=()=>res(r?r.result:undefined); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error);
+    }));
+  }
+  return {
+    put:(n,v)=>tx(n,"readwrite",s=>s.put(v)),
+    del:(n,k)=>tx(n,"readwrite",s=>s.delete(k)),
+    all:(n)=>tx(n,"readonly",s=>s.getAll()),
+    byRoll:(id)=>tx("frames","readonly",s=>s.index("roll").getAll(id))
+  };
+})();
+
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtDur = s => { s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
+const fmtAt = t => new Date(t).toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+const curRoll = () => J.rolls.find(r=>r.id===J.roll)||null;
+const nextN = () => J.frames.reduce((m,f)=>Math.max(m,f.n||0),0)+1;
+const byN = (a,b) => (a.n-b.n)||(a.at-b.at);
+
+function snapshot(){
+  const r=compute(), rec=recommend(r);
+  const c = rec==="B" ? null : r.cols.find(c=>c.sp===rec);
+  const pair = rec==="B" ? `B ${fmtTime(r.B.needB?r.B.tBc:r.B.tB)} · f/${r.B.label}` : `1/${rec} · f/${c.label}`;
+  return {pair, iso:S.iso, lens:LENSES[S.lens].name, ev100:Math.round(r.ev100*10)/10, comp:S.comp, scene:SCENES[currentScene()].name,
+    src: S.source==="photo"&&S.photoEV!=null ? "замер по фото" : PRESETS[S.preset][0].toLowerCase(), manual:S.pick!=null};
+}
+
+function recMsg(t, alert){ const m=$("recMsg"); m.textContent=t; m.classList.toggle("alert",!!alert); }
+function recUI(){
+  const b=$("recBtn");
+  b.classList.toggle("on",!!J.rec); b.setAttribute("aria-pressed",String(!!J.rec));
+  $("recLbl").textContent = J.rec ? `Стоп · ${fmtDur((Date.now()-J.rec.start)/1000)}` : `Кадр ${nextN()}: надиктовать`;
+  $("recQuiet").disabled = !!J.rec || !J.ok;
+  b.disabled = !J.ok;
+}
+
+async function newRoll(){
+  const d=new Date();
+  const r={id:"r"+Date.now(), name:`Плёнка от ${d.toLocaleDateString("ru-RU")}, ISO ${S.iso}`, iso:S.iso, created:Date.now()};
+  await DB.put("rolls",r);
+  J.rolls.unshift(r); J.roll=r.id; store.set("roll",r.id); J.frames=[];
+  return r;
+}
+
+async function addFrame(a){
+  const roll = curRoll() || await newRoll();
+  const snap = a ? a.snap : snapshot();
+  const f={id:"f"+Date.now()+Math.random().toString(36).slice(2,6), roll:roll.id, n:nextN(), at:a?a.at:Date.now(), snap, shot:snap.pair,
+    audio:a?a.buf:null, mime:a?a.mime:"", dur:a?a.dur:0, note:"", result:"", probs:[], lesson:""};
+  await DB.put("frames",f);
+  J.frames.push(f); J.frames.sort(byN);
+  jRender();
+  return f;
+}
+
+function pickMime(){
+  for(const m of ["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus"]){ try{ if(MediaRecorder.isTypeSupported(m)) return m; }catch(e){} }
+  return "";
+}
+
+async function toggleRec(){
+  if(J.rec){ try{ J.rec.mr.stop(); }catch(e){} return; }
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)){
+    recMsg("Этот браузер не умеет записывать звук. Нажмите «Без голоса» и допишите заметку текстом в журнале.", true); return;
+  }
+  const snap=snapshot(), at=Date.now();
+  let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ recMsg("Нет доступа к микрофону. Разрешите его для этого сайта (на iPhone: Настройки → Safari → Микрофон) и нажмите ещё раз. Или запишите кадр без голоса.", true); return; }
+  const mime=pickMime();
+  let mr; try{ mr=new MediaRecorder(stream, mime?{mimeType:mime}:undefined); }catch(e){ mr=new MediaRecorder(stream); }
+  const chunks=[];
+  mr.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop=async()=>{
+    stream.getTracks().forEach(t=>t.stop());
+    const cur=J.rec; if(cur){ clearInterval(cur.timer); clearTimeout(cur.limit); }
+    const dur = cur ? (Date.now()-cur.start)/1000 : 0;
+    J.rec=null; recUI();
+    const type=mr.mimeType||mime||"audio/mp4";
+    const blob=new Blob(chunks,{type});
+    if(!blob.size){ recMsg("Запись получилась пустой. Попробуйте ещё раз.", true); return; }
+    try{
+      const f=await addFrame({buf:await blob.arrayBuffer(), mime:type, dur, snap, at});
+      recMsg(`Кадр ${f.n} в журнале: ${f.shot}, голос ${fmtDur(f.dur)}. Не забудьте взвести затвор.`);
+    }catch(e){ recMsg("Не получилось сохранить запись в память телефона.", true); }
+  };
+  J.rec={mr, start:Date.now(), timer:setInterval(recUI,500), limit:setTimeout(()=>{ try{ mr.state!=="inactive"&&mr.stop(); }catch(e){} },180000)};
+  mr.start();
+  recMsg("Идёт запись. Расскажите, что снимаете, где стоите и почему такая пара. Нажмите ещё раз, чтобы закончить.");
+  recUI();
+}
+
+$("recBtn").addEventListener("click",toggleRec);
+$("recQuiet").addEventListener("click",async()=>{
+  try{ const f=await addFrame(null); recMsg(`Кадр ${f.n} в журнале без голоса: ${f.shot}. Заметку можно дописать ниже.`); }
+  catch(e){ recMsg("Не получилось сохранить кадр в память телефона.", true); }
+});
+
+function saveSoon(f){
+  clearTimeout(J.timers.get(f.id));
+  J.timers.set(f.id, setTimeout(()=>{ J.timers.delete(f.id); DB.put("frames",f).catch(()=>{}); },400));
+}
+
+function audioURL(f){
+  if(!f.audio) return null;
+  if(!J.urls.has(f.id)) J.urls.set(f.id, URL.createObjectURL(new Blob([f.audio],{type:f.mime||"audio/mp4"})));
+  return J.urls.get(f.id);
+}
+
+function resBadge(f){ return f.result ? `<span class="fres ${f.result}">${J_RES[f.result]}</span>` : ""; }
+
+function frameCard(f){
+  const el=document.createElement("article"); el.className="frame";
+  const s=f.snap||{};
+  const url=audioURL(f);
+  el.innerHTML=`<div class="fhead">
+      <input class="fnum" type="number" min="0" max="99" inputmode="numeric" aria-label="Номер кадра">
+      <span class="fmeta">${fmtAt(f.at)} · ${esc(s.scene)}</span><span class="rb">${resBadge(f)}</span>
+      <button type="button" class="fdel">Удалить</button>
+    </div>
+    <div class="fmeta">Совет: ${esc(s.pair)}${s.manual?" (пара выбрана вручную)":""} · ${esc(s.lens)} · ISO ${esc(s.iso)} · EV₁₀₀ ${fmt1(s.ev100||0)}${s.comp?` · корр. ${fmtThirds(s.comp)}`:""} · ${esc(s.src)}</div>
+    <label class="field"><span class="label">Снято на самом деле</span><input type="text" data-k="shot"></label>
+    ${url?`<audio controls preload="metadata" src="${url}"></audio><span class="fmeta">Голос ${fmtDur(f.dur)}</span>`:`<span class="fhint">Без голосовой заметки</span>`}
+    <label class="field"><span class="label">Заметка</span><textarea data-k="note" placeholder="Что снимала, какой хотела получить кадр"></textarea></label>
+    <details${f.result||f.lesson||(f.probs&&f.probs.length)?" open":""}><summary>Итог по скану</summary>
+      <div class="field"><span class="label">Как вышло</span><div class="res">${Object.entries(J_RES).map(([k,v])=>`<button type="button" data-res="${k}">${v}</button>`).join("")}</div></div>
+      <div class="field"><span class="label">Что пошло не так</span><div class="probs">${Object.entries(J_PROB).map(([k,v])=>`<button type="button" data-prob="${k}">${v}</button>`).join("")}</div></div>
+      <label class="field"><span class="label">Что сделать иначе</span><textarea data-k="lesson" placeholder="Вывод на следующую плёнку"></textarea></label>
+    </details>`;
+  const num=el.querySelector(".fnum"); num.value=f.n;
+  num.addEventListener("change",()=>{ const v=parseInt(num.value,10); if(v>=0&&v<=99){ f.n=v; DB.put("frames",f).catch(()=>{}); J.frames.sort(byN); jRender(); } else num.value=f.n; });
+  el.querySelectorAll("[data-k]").forEach(inp=>{
+    inp.value=f[inp.dataset.k]||"";
+    inp.addEventListener("input",()=>{ f[inp.dataset.k]=inp.value; saveSoon(f); });
+  });
+  const paint=()=>{
+    el.querySelectorAll("[data-res]").forEach(b=>b.setAttribute("aria-pressed",String(f.result===b.dataset.res)));
+    el.querySelectorAll("[data-prob]").forEach(b=>b.setAttribute("aria-pressed",String((f.probs||[]).includes(b.dataset.prob))));
+    el.querySelector(".rb").innerHTML=resBadge(f);
+  };
+  el.querySelectorAll("[data-res]").forEach(b=>b.addEventListener("click",()=>{ f.result = f.result===b.dataset.res ? "" : b.dataset.res; DB.put("frames",f).catch(()=>{}); paint(); jSummary(); }));
+  el.querySelectorAll("[data-prob]").forEach(b=>b.addEventListener("click",()=>{ const k=b.dataset.prob; f.probs=(f.probs||[]).includes(k)?f.probs.filter(x=>x!==k):[...(f.probs||[]),k]; DB.put("frames",f).catch(()=>{}); paint(); jSummary(); }));
+  el.querySelector(".fdel").addEventListener("click",async()=>{
+    if(!confirm(`Удалить кадр ${f.n}${f.audio?" вместе с голосовой заметкой":""}?`)) return;
+    try{ await DB.del("frames",f.id); }catch(e){ return; }
+    if(J.urls.has(f.id)){ URL.revokeObjectURL(J.urls.get(f.id)); J.urls.delete(f.id); }
+    J.frames=J.frames.filter(x=>x!==f); jRender();
+  });
+  paint();
+  return el;
+}
+
+function jSummary(){
+  const box=$("jSum"), fr=J.frames;
+  if(!J.ok){ box.innerHTML="<p>Этот браузер не даёт сохранять журнал в память телефона. Откройте экспонометр в Safari или Chrome.</p>"; return; }
+  if(!J.roll){ box.innerHTML="<p>Плёнки пока нет. Она появится сама, когда вы запишете первый кадр, или нажмите «Новая плёнка».</p>"; return; }
+  if(!fr.length){ box.innerHTML="<p>На этой плёнке пока нет кадров. Записывайте их кнопкой в тёмной панели сразу после щелчка затвора.</p>"; return; }
+  const done=fr.filter(f=>f.result), voiced=fr.filter(f=>f.audio).length;
+  const cnt=k=>done.filter(f=>f.result===k).length;
+  const lines=[`<p><b>Кадров: ${fr.length}</b>, с голосом ${voiced}. Итог отмечен у ${done.length}${done.length<fr.length?` из ${fr.length}`:""}.</p>`];
+  if(done.length) lines.push(`<p>Удачно ${cnt("good")} · так себе ${cnt("meh")} · брак ${cnt("bad")}</p>`);
+  const probs=Object.keys(J_PROB).map(k=>({k, fs:fr.filter(f=>(f.probs||[]).includes(k))})).filter(p=>p.fs.length).sort((a,b)=>b.fs.length-a.fs.length);
+  probs.forEach(p=>lines.push(`<p>${J_PROB[p.k]}: кадр${p.fs.length>1?"ы":""} ${p.fs.map(f=>f.n).join(", ")}</p>`));
+  if(probs.length && probs[0].fs.length>=2) lines.push(`<p class="tip">${J_TIP[probs[0].k]}</p>`);
+  const expo=(k,sign)=>{
+    const fs=fr.filter(f=>(f.probs||[]).includes(k)); if(fs.length<2) return;
+    const photo=fs.filter(f=>f.snap&&f.snap.src==="замер по фото").length;
+    if(photo===fs.length) lines.push(`<p class="tip">Все ${k==="under"?"недодержанные":"передержанные"} кадры замерены по фото: похоже, телефон ${k==="under"?"завышает":"занижает"} свет. Поставьте калибровку ${sign}⅔ и сверьте на следующей плёнке.</p>`);
+    else if(photo===0) lines.push(`<p class="tip">Все ${k==="under"?"недодержанные":"передержанные"} кадры посчитаны по условиям, без фото. Попробуйте на таких сюжетах замерять по фото.</p>`);
+  };
+  expo("under","+"); expo("over","−");
+  const manual=done.filter(f=>f.snap&&f.shot&&f.shot.trim()!==f.snap.pair);
+  if(manual.length) lines.push(`<p class="tip">На кадрах ${manual.map(f=>f.n).join(", ")} вы снимали не ту пару, что советовала страница. Сравните их итог с остальными.</p>`);
+  if(done.length<fr.length) lines.push(`<p class="tip">Когда придут сканы, откройте у кадров «Итог по скану».</p>`);
+  box.innerHTML=lines.join("");
+}
+
+function jRender(){
+  const sel=$("jRoll");
+  sel.innerHTML = J.rolls.length ? J.rolls.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("") : `<option value="">Плёнок пока нет</option>`;
+  sel.value=J.roll||""; sel.disabled=!J.rolls.length;
+  $("jNew").disabled=!J.ok;
+  const r=curRoll();
+  $("jNameWrap").hidden=!r; $("jActs").hidden=!r;
+  if(r && document.activeElement!==$("jName")) $("jName").value=r.name;
+  $("jExport").disabled=!J.frames.length;
+  jSummary();
+  const list=$("jList"); list.innerHTML="";
+  J.frames.slice().reverse().forEach(f=>list.appendChild(frameCard(f)));
+  recUI();
+}
+
+async function jLoadFrames(){
+  J.frames = J.roll ? (await DB.byRoll(J.roll)).sort(byN) : [];
+  J.urls.forEach(u=>URL.revokeObjectURL(u)); J.urls.clear();
+}
+
+$("jRoll").addEventListener("change",async e=>{ J.roll=e.target.value||null; store.set("roll",J.roll); try{ await jLoadFrames(); }catch(err){} jRender(); });
+$("jNew").addEventListener("click",async()=>{ try{ await newRoll(); await jLoadFrames(); }catch(e){} jRender(); $("jName").focus(); $("jName").select(); });
+let nameT=null;
+$("jName").addEventListener("input",e=>{ const r=curRoll(); if(!r) return; r.name=e.target.value||"Без названия"; clearTimeout(nameT); nameT=setTimeout(()=>{ DB.put("rolls",r).catch(()=>{}); const o=$("jRoll").selectedOptions[0]; if(o) o.textContent=r.name; },400); });
+$("jDelRoll").addEventListener("click",async()=>{
+  const r=curRoll(); if(!r) return;
+  if(!confirm(`Удалить плёнку «${r.name}» и все кадры на ней (${J.frames.length}) вместе с голосовыми заметками? Это нельзя отменить.`)) return;
+  try{ for(const f of J.frames) await DB.del("frames",f.id); await DB.del("rolls",r.id); }catch(e){ return; }
+  J.rolls=J.rolls.filter(x=>x!==r); J.roll=J.rolls[0]?J.rolls[0].id:null; store.set("roll",J.roll);
+  try{ await jLoadFrames(); }catch(e){} jRender();
+});
+
+function b64(buf){ const u=new Uint8Array(buf); let s=""; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
+
+async function jExport(){
+  const r=curRoll(); if(!r||!J.frames.length) return;
+  const fr=J.frames.slice().sort(byN);
+  const sumHTML=$("jSum").innerHTML;
+  const cards=fr.map(f=>{
+    const s=f.snap||{};
+    return `<article><h2>Кадр ${f.n}${f.result?` <span class="b ${f.result}">${J_RES[f.result]}</span>`:""}</h2>
+<p class="m">${fmtAt(f.at)} · ${esc(s.scene)} · совет ${esc(s.pair)} · ${esc(s.lens)} · ISO ${esc(s.iso)} · EV₁₀₀ ${fmt1(s.ev100||0)} · ${esc(s.src)}</p>
+<p><b>Снято:</b> ${esc(f.shot||s.pair)}</p>
+${f.audio?`<audio controls src="data:${esc(f.mime||"audio/mp4")};base64,${b64(f.audio)}"></audio>`:""}
+${f.note?`<p><b>Заметка:</b> ${esc(f.note)}</p>`:""}
+${(f.probs||[]).length?`<p><b>Что не так:</b> ${f.probs.map(k=>J_PROB[k]).join(", ")}</p>`:""}
+${f.lesson?`<p><b>Вывод:</b> ${esc(f.lesson)}</p>`:""}</article>`;
+  }).join("\n");
+  const html=`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(r.name)}</title>
+<style>body{margin:0;padding:20px 16px 40px;font:15px/1.5 system-ui,sans-serif;background:#F5F5F2;color:#1A1B19}main{max-width:720px;margin:0 auto;display:grid;gap:14px}h1{margin:0;font-size:24px}h2{margin:0;font-size:18px}.sum,article{background:#fff;border:1px solid #C6C8C1;border-radius:12px;padding:14px;display:grid;gap:6px}.sum p,article p{margin:0}.m{font:13px ui-monospace,Menlo,monospace;color:#5B5F58}audio{width:100%}.b{font-size:12px;padding:3px 8px;border-radius:99px;background:#DCDDD8;vertical-align:middle}.b.good{background:#D5E6D8;color:#2F6B3A}.b.bad{background:#F0E0C4;color:#9A6400}.tip{color:#5B5F58}@media (prefers-color-scheme:dark){body{background:#121311;color:#E9E8E2}.sum,article{background:#1C1D1B;border-color:#34362F}.m,.tip{color:#9A9D95}.b{background:#252623}}</style></head>
+<body><main><h1>${esc(r.name)}</h1><div class="sum">${sumHTML}</div>
+${cards}</main></body></html>`;
+  const name=(r.name.replace(/[\\/:*?"<>|]+/g," ").trim()||"Журнал плёнки")+".html";
+  const file=new File([html],name,{type:"text/html"});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:r.name}); return; }catch(e){ if(e && e.name==="AbortError") return; }
+  }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000);
+}
+$("jExport").addEventListener("click",()=>{ jExport().catch(()=>alert("Не получилось сохранить файл.")); });
+
+(async function jInit(){
+  if(!window.indexedDB){ J.ok=false; jRender(); return; }
+  try{
+    J.rolls=(await DB.all("rolls")).sort((a,b)=>b.created-a.created);
+    if(!J.rolls.some(r=>r.id===J.roll)) J.roll=J.rolls[0]?J.rolls[0].id:null;
+    await jLoadFrames();
+  }catch(e){ J.ok=false; }
+  jRender();
+})();
+
 $("zcap").innerHTML=ZONE_CAP[S.mode];
 buildIso(); buildPresets(); render();
 })();
