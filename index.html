@@ -544,10 +544,11 @@ const SCENES = {
   portrait:{name:"Портрет"}, action:{name:"Движение"}, street:{name:"Улица"},
   landscape:{name:"Пейзаж"}, general:{name:"Обычный"}
 };
-const RU = {person:"человек",bicycle:"велосипед",car:"машина",motorcycle:"мотоцикл",bus:"автобус",train:"поезд",truck:"грузовик",boat:"лодка",bird:"птица",cat:"кошка",dog:"собака",horse:"лошадь",sheep:"овца",cow:"корова","sports ball":"мяч",kite:"воздушный змей",skateboard:"скейт",surfboard:"сёрф",skis:"лыжи",snowboard:"сноуборд",frisbee:"фрисби",airplane:"самолёт",bench:"скамейка","potted plant":"растение",cup:"чашка",vase:"ваза",book:"книга",chair:"стул",umbrella:"зонт","traffic light":"светофор",bottle:"бутылка","dining table":"стол",clock:"часы",face:"лицо"};
+const RU = {person:"человек",bicycle:"велосипед",car:"машина",motorcycle:"мотоцикл",airplane:"самолёт",bus:"автобус",train:"поезд",truck:"грузовик",boat:"лодка","traffic light":"светофор","fire hydrant":"гидрант","stop sign":"знак «стоп»","parking meter":"паркомат",bench:"скамейка",bird:"птица",cat:"кошка",dog:"собака",horse:"лошадь",sheep:"овца",cow:"корова",elephant:"слон",bear:"медведь",zebra:"зебра",giraffe:"жираф",backpack:"рюкзак",umbrella:"зонт",handbag:"сумка",tie:"галстук",suitcase:"чемодан",frisbee:"фрисби",skis:"лыжи",snowboard:"сноуборд","sports ball":"мяч",kite:"воздушный змей","baseball bat":"бита","baseball glove":"перчатка",skateboard:"скейт",surfboard:"сёрф","tennis racket":"ракетка",bottle:"бутылка","wine glass":"бокал",cup:"чашка",fork:"вилка",knife:"нож",spoon:"ложка",bowl:"миска",banana:"банан",apple:"яблоко",sandwich:"бутерброд",orange:"апельсин",broccoli:"брокколи",carrot:"морковь","hot dog":"хот-дог",pizza:"пицца",donut:"пончик",cake:"торт",chair:"стул",couch:"диван","potted plant":"растение в горшке",bed:"кровать","dining table":"стол",toilet:"унитаз",tv:"экран",laptop:"ноутбук",mouse:"мышь",remote:"пульт",keyboard:"клавиатура","cell phone":"телефон",microwave:"микроволновка",oven:"духовка",toaster:"тостер",sink:"раковина",refrigerator:"холодильник",book:"книга",clock:"часы",vase:"ваза",scissors:"ножницы","teddy bear":"плюшевая игрушка","hair drier":"фен",toothbrush:"зубная щётка",face:"лицо"};
 const ANIMALS = new Set(["bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe"]);
 const SPORT = new Set(["sports ball","kite","frisbee","skateboard","surfboard","skis","snowboard"]);
 const VEH = new Set(["bicycle","car","motorcycle","bus","train","truck","boat","airplane"]);
+const BACKGROUND = new Set(["dining table","bed","couch","tv","refrigerator","toilet","sink","oven","bench","chair"]);
 const MOVERS = new Set(["bicycle","car","motorcycle","bus","train","truck","boat","bird","cat","dog","horse","sheep","cow","sports ball","kite","skateboard","surfboard","skis","snowboard","frisbee","airplane"]);
 const pct = x => Math.round(x*100)+"%";
 
@@ -555,7 +556,8 @@ function subjectBox(){
   const f=(S.faces||[]).slice().sort((a,b)=>b.w*b.h-a.w*a.h)[0];
   if(f) return {...f,kind:"face"};
   const d=(S.det||[]).filter(d=>d.label==="person").sort((a,b)=>b.w*b.h-a.w*a.h)[0]
-       || (S.det||[]).filter(d=>MOVERS.has(d.label)).sort((a,b)=>b.w*b.h-a.w*a.h)[0];
+       || (S.det||[]).filter(d=>MOVERS.has(d.label)).sort((a,b)=>b.w*b.h-a.w*a.h)[0]
+       || (S.det||[]).filter(d=>!BACKGROUND.has(d.label) && d.w*d.h>=0.01 && d.w*d.h<=0.6).sort((a,b)=>(b.score*Math.sqrt(b.w*b.h))-(a.score*Math.sqrt(a.w*a.h)))[0];
   if(d) return {...d,kind:d.label};
   return null;
 }
@@ -620,7 +622,7 @@ function classify(){
     sc="landscape";
     why.push("Людей, животных и транспорта нет, сверху светлое небо. Похоже на пейзаж или архитектуру.");
   } else if(S.det){
-    why.push("Людей, животных и транспорта не нашла, выбираю обычный режим. Предметы вроде игрушек, посуды или цветов модель часто не знает.");
+    why.push(det.length ? "Людей, животных и транспорта нет, только предметы, поэтому выбираю обычный режим." : "Ничего знакомого модели не нашла, выбираю обычный режим. Многие предметы (игрушки, фотоаппараты, зажигалки) модель не знает.");
   }
   S.detWhy=why;
   return sc;
@@ -672,7 +674,8 @@ function lightAdvice(r){
   if(!L) return {out,acts};
   const face=subjectBox();
   if(face && L.subjVsBg < -1.3 && S.mode!=="spot"){
-    out.push({warn:true, text:`Контровой свет: ${face.kind==="face"?"лицо":"главный объект"} темнее фона примерно на ${fmtThirds(-L.subjVsBg).replace("+","")} ступ. Замер по всему кадру даст тёмный силуэт. Лучше замерить по ${face.kind==="face"?"лицу":"объекту"} или добавить света коррекцией.`});
+    const nm = face.kind==="face" ? "лицо" : (RU[face.kind]||"главный объект");
+    out.push({warn:true, text:`Контровой свет: ${nm} темнее фона примерно на ${fmtThirds(-L.subjVsBg).replace("+","")} ступ. Замер по всему кадру настроен на яркое окно или небо, и объект выйдет тёмным силуэтом. Чтобы объект был проработан, нажмите «Замерить по объекту»: выдержка станет длиннее или диафрагма шире. Если нужен силуэт, оставьте как есть.`});
     acts.push({label:`Замерить по ${face.kind==="face"?"лицу":"объекту"}`, fn:()=>{S.spot=[face.x+face.w/2, face.y+face.h*(face.kind==="person"?0.25:0.5)]; setMode("spot");}});
     if(S.comp<1) acts.push({label:"Коррекция +1½", fn:()=>setComp(1.5)});
   } else if(!face && L.subjVsBg < -1.5 && S.mode==="avg"){
@@ -683,7 +686,7 @@ function lightAdvice(r){
     out.push({warn:true, text:`Много белого (${pct(L.whiteFrac)} кадра): снег, песок или белые стены. Экспонометр делает всё средне-серым, и белое выйдет грязно-серым. Добавьте +1…+2.`});
     acts.push({label:"Коррекция +1½", fn:()=>setComp(1.5)});
   }
-  if(L.dr>6.5){
+  if(L.dr>6.5 && !out.some(o=>o.warn && /Контровой/.test(o.text))){
     out.push({text:`Сильный контраст: между светами и тенями около ${Math.round(L.dr)} ступ., а на снимке телефона разница ещё и сглажена. Негатив лучше экспонировать по теням: замерьте точкой по важной тени и поставьте −1½…−2, света плёнка вытянет.`});
   }
   if(L.clipFrac>0.15 && S.mode==="avg"){
