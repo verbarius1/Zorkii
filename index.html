@@ -330,7 +330,7 @@ html{scroll-behavior:smooth}
         <p>После выбора фото страница ищет на снимке людей, лица, животных, машины, велосипеды и смотрит, как распределён свет. Всё считается на телефоне, снимок никуда не отправляется. Первый раз загружается модель распознавания (около 5 МБ), потом браузер обычно берёт её из памяти.</p>
         <dl>
           <dt>Портрет</dt><dd>открытая диафрагма при выдержке не длиннее 1/100: фон размыт, лицо резкое</dd>
-          <dt>Движение</dt><dd>выдержка 1/250–1/500, диафрагма подстраивается</dd>
+          <dt>Движение</dt><dd>выдержка 1/250–1/500, диафрагма подстраивается. Включается само, если в кадре животные или мяч. Для машин и велосипедов не включается: по одному снимку не видно, едут они или стоят. Если едут, нажмите «Транспорт едет» или «Движение»</dd>
           <dt>Улица</dt><dd>от 1/250 и около f/8, чтобы можно было навести заранее и снимать сразу</dd>
           <dt>Пейзаж</dt><dd>f/8–11, самая резкая область Индустара</dd>
           <dt>Обычный</dt><dd>1/100 и диафрагма, какая получится</dd>
@@ -463,7 +463,7 @@ const S = {
   mode: "avg",
   spot: [0.5,0.5],
   img: null, // {data,w,h,exif}
-  det: null, faces: [], light: null, sceneAuto: null, sceneMode: "auto", detStatus: "", detWhy: [],
+  det: null, faces: [], sceneActs: [], light: null, sceneAuto: null, sceneMode: "auto", detStatus: "", detWhy: [],
 };
 
 // ---------- formatting ----------
@@ -592,6 +592,7 @@ function analyzeLight(I, box){
 }
 
 function classify(){
+  S.sceneActs=[];
   const det=S.det||[], faces=S.faces||[], L=S.light;
   const why=[];
   const people=det.filter(d=>d.label==="person");
@@ -613,11 +614,15 @@ function classify(){
     sc="portrait";
     why.push(bigFace>0.008 ? `Лицо крупное (${pct(bigFace)} кадра), поэтому считаю это портретом.` : `Человек занимает ${pct(bigPerson)} кадра, поэтому считаю это портретом.`);
   } else if(veh.length && !people.length){
-    sc="action";
-    why.push(`${cap(name(veh[0]))} может ехать, поэтому нужна короткая выдержка.`);
+    // По одному снимку не видно, едет транспорт или стоит. Чаще он стоит (парковка, двор),
+    // поэтому короткую выдержку не навязываем, а даём кнопку.
+    sc="general";
+    const many=veh.length>=3;
+    why.push(`${cap(name(veh[0]))}${veh.length>1?` и ещё ${veh.length-1}`:""} в кадре. По снимку не видно, едет ли транспорт${many?"; несколько машин рядом — похоже на парковку":""}, поэтому считаю, что он стоит.`);
+    S.sceneActs.push({label:"Транспорт едет → «Движение»", fn:()=>{S.sceneMode="action"; S.pick=null; render();}});
   } else if(people.length || veh.length){
     sc="street";
-    why.push(people.length ? `Люди в кадре небольшие (${people.length} чел.)${veh.length?", рядом транспорт":""}. Похоже на уличную сцену: люди идут, лучше выдержка покороче и запас резкости.` : `Транспорт в кадре, похоже на улицу.`);
+    why.push(people.length ? `Люди в кадре небольшие (${people.length} чел.)${veh.length?", рядом транспорт (он может и стоять)":""}. Похоже на уличную сцену: люди идут, лучше выдержка покороче и запас резкости.` : `Транспорт в кадре, похоже на улицу.`);
   } else if(L && (L.skyish || L.topVsRest>1)){
     sc="landscape";
     why.push("Людей, животных и транспорта нет, сверху светлое небо. Похоже на пейзаж или архитектуру.");
@@ -724,6 +729,7 @@ function renderAdvice(r, rec){
   if(S._auto && S._auto.reason) items.push({text:S._auto.reason});
   if(S.pick!=null && S._auto) items.push({text:`Вы выбрали пару сами. Для этого сюжета я бы предложила ${S._auto.sp==="B"?"B":"1/"+S._auto.sp}.`});
   const la=lightAdvice(r); items.push(...la.out);
+  if(S.sceneMode==="auto" && S.sceneActs) la.acts.unshift(...S.sceneActs);
   const ln=lensNote(rec,r); if(ln) items.push({text:ln});
   let status="";
   if(S.detStatus==="loading") status="Распознаю сюжет… Первый раз загружается модель, около 5 МБ.";
