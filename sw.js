@@ -1,9 +1,9 @@
 // Экспонометр Зоркого — работа без сети.
 // Страница: сначала сеть (чтобы видеть обновления), без сети — из памяти.
 // Шрифты, библиотека и модели распознавания: сначала из памяти, иначе из сети с сохранением.
-const PAGE_CACHE = "zorki-page-v2";
+const PAGE_CACHE = "zorki-page-v3";
 const ASSET_CACHE = "zorki-assets-v1";
-const PAGE_FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
+const PAGE_FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(PAGE_CACHE).then((c) => c.addAll(PAGE_FILES)).then(() => self.skipWaiting()));
