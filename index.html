@@ -349,6 +349,7 @@ input.fnum:hover{border-color:var(--line)}
       <div class="row" id="jActs" hidden>
         <button class="btn" type="button" id="jExport">Сохранить журнал файлом</button>
         <button class="btn" type="button" id="jDelRoll">Удалить плёнку</button>
+        <button class="btn" type="button" id="jClear">Очистить весь журнал</button>
       </div>
       <div class="jlist" id="jList"></div>
     </section>
@@ -1247,7 +1248,8 @@ const DB = (()=>{
     put:(n,v)=>tx(n,"readwrite",s=>s.put(v)),
     del:(n,k)=>tx(n,"readwrite",s=>s.delete(k)),
     all:(n)=>tx(n,"readonly",s=>s.getAll()),
-    byRoll:(id)=>tx("frames","readonly",s=>s.index("roll").getAll(id))
+    byRoll:(id)=>tx("frames","readonly",s=>s.index("roll").getAll(id)),
+    clear:(n)=>tx(n,"readwrite",s=>s.clear())
   };
 })();
 
@@ -1446,6 +1448,17 @@ $("jDelRoll").addEventListener("click",async()=>{
   try{ for(const f of J.frames) await DB.del("frames",f.id); await DB.del("rolls",r.id); }catch(e){ return; }
   J.rolls=J.rolls.filter(x=>x!==r); J.roll=J.rolls[0]?J.rolls[0].id:null; store.set("roll",J.roll);
   try{ await jLoadFrames(); }catch(e){} jRender();
+});
+$("jClear").addEventListener("click",async()=>{
+  if(J.rec) return;
+  const nr=J.rolls.length;
+  if(!confirm(`Очистить весь журнал? Будут удалены все плёнки (${nr}) и все кадры на них вместе с голосовыми заметками и итогами. Это нельзя отменить.\n\nЕсли записи нужны, сначала нажмите «Сохранить журнал файлом» для каждой плёнки.`)) return;
+  try{ await DB.clear("frames"); await DB.clear("rolls"); }
+  catch(e){ alert("Не получилось очистить журнал. Попробуйте ещё раз."); return; }
+  J.urls.forEach(u=>URL.revokeObjectURL(u)); J.urls.clear();
+  J.rolls=[]; J.roll=null; J.frames=[]; store.set("roll",null);
+  jRender();
+  recMsg("Журнал очищен. Новый кадр начнёт новую плёнку.");
 });
 
 function b64(buf){ const u=new Uint8Array(buf); let s=""; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
