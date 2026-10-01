@@ -113,6 +113,7 @@ summary{cursor:pointer;font:700 14px var(--narrow);letter-spacing:.08em;text-tra
 details p,details li{font-size:14px;color:var(--muted);max-width:62ch}
 details ul{padding-left:18px;margin:8px 0}
 .col{display:grid;gap:20px;min-width:0}
+.linkbtn{appearance:none;border:0;background:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
 .intro{margin:0;font-size:16px;line-height:1.55;max-width:70ch;color:var(--ink)}
 .quick{display:grid;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
 @media (min-width:700px){.quick{grid-template-columns:auto 1fr;align-items:start;gap:24px}}
@@ -348,6 +349,7 @@ input.fnum:hover{border-color:var(--line)}
       <div class="jsum" id="jSum"></div>
       <div class="row" id="jActs" hidden>
         <button class="btn" type="button" id="jExport">Сохранить журнал файлом</button>
+        <button class="btn" type="button" id="jAudio">Выгрузить голосовые записи</button>
         <button class="btn" type="button" id="jDelRoll">Удалить плёнку</button>
         <button class="btn" type="button" id="jClear">Очистить весь журнал</button>
       </div>
@@ -1363,7 +1365,7 @@ function frameCard(f){
     </div>
     <div class="fmeta">Совет: ${esc(s.pair)}${s.manual?" (пара выбрана вручную)":""} · ${esc(s.lens)} · ISO ${esc(s.iso)} · EV₁₀₀ ${fmt1(s.ev100||0)}${s.comp?` · корр. ${fmtThirds(s.comp)}`:""} · ${esc(s.src)}</div>
     <label class="field"><span class="label">Снято на самом деле</span><input type="text" data-k="shot"></label>
-    ${url?`<audio controls preload="metadata" src="${url}"></audio><span class="fmeta">Голос ${fmtDur(f.dur)}</span>`:`<span class="fhint">Без голосовой заметки</span>`}
+    ${url?`<audio controls preload="metadata" src="${url}"></audio><span class="fmeta">Голос ${fmtDur(f.dur)} · <button type="button" class="linkbtn fshare">Поделиться записью</button></span>`:`<span class="fhint">Без голосовой заметки</span>`}
     <label class="field"><span class="label">Заметка</span><textarea data-k="note" placeholder="Что снимала, какой хотела получить кадр"></textarea></label>
     <details${f.result||f.lesson||(f.probs&&f.probs.length)?" open":""}><summary>Итог по скану</summary>
       <div class="field"><span class="label">Как вышло</span><div class="res">${Object.entries(J_RES).map(([k,v])=>`<button type="button" data-res="${k}">${v}</button>`).join("")}</div></div>
@@ -1389,6 +1391,8 @@ function frameCard(f){
     if(J.urls.has(f.id)){ URL.revokeObjectURL(J.urls.get(f.id)); J.urls.delete(f.id); }
     J.frames=J.frames.filter(x=>x!==f); jRender();
   });
+  const sh=el.querySelector(".fshare");
+  if(sh) sh.addEventListener("click",()=>{ shareFiles([audioFile(f)], `Кадр ${f.n}`).catch(()=>{}); });
   paint();
   return el;
 }
@@ -1427,6 +1431,7 @@ function jRender(){
   $("jNameWrap").hidden=!r; $("jActs").hidden=!r;
   if(r && document.activeElement!==$("jName")) $("jName").value=r.name;
   $("jExport").disabled=!J.frames.length;
+  $("jAudio").disabled=!J.frames.some(f=>f.audio);
   jSummary();
   const list=$("jList"); list.innerHTML="";
   J.frames.slice().reverse().forEach(f=>list.appendChild(frameCard(f)));
@@ -1489,6 +1494,27 @@ ${cards}</main></body></html>`;
   const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=name; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000);
 }
+function audioExt(m){ m=m||"audio/mp4"; return /webm/.test(m)?"webm":/ogg/.test(m)?"ogg":"m4a"; }
+function audioFile(f){
+  const r=curRoll(); const d=new Date(f.at); const pad=n=>String(n).padStart(2,"0");
+  const name=`Кадр ${pad(f.n)} — ${pad(d.getDate())}.${pad(d.getMonth()+1)} ${pad(d.getHours())}-${pad(d.getMinutes())}.${audioExt(f.mime)}`;
+  return new File([f.audio], name, {type:(f.mime||"audio/mp4").split(";")[0]});
+}
+async function shareFiles(files, title){
+  if(navigator.canShare && navigator.canShare({files})){
+    try{ await navigator.share({files, title}); return; }catch(e){ if(e && e.name==="AbortError") return; }
+  }
+  for(const file of files){
+    const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=file.name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000);
+    await new Promise(r=>setTimeout(r,300));
+  }
+}
+$("jAudio").addEventListener("click",()=>{
+  const fr=J.frames.filter(f=>f.audio).sort(byN);
+  if(!fr.length){ recMsg("На этой плёнке нет голосовых записей."); return; }
+  shareFiles(fr.map(audioFile), (curRoll()||{}).name||"Голосовые записи").catch(()=>alert("Не получилось выгрузить записи."));
+});
 $("jExport").addEventListener("click",()=>{ jExport().catch(()=>alert("Не получилось сохранить файл.")); });
 
 (async function jInit(){
