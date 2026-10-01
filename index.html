@@ -226,7 +226,7 @@ input.fnum:hover{border-color:var(--line)}
     <h1>Экспонометр для Зоркого-С</h1>
     <span class="sub">Затвор B–1/500 · М39</span>
     <a class="jump" href="#guide">Инструкция</a>
-    <span class="ver" id="ver">версия 01.10 · 22:00</span>
+    <span class="ver" id="ver">версия 01.10 · 22:10</span>
   </header>
 
   <p class="intro">Экспонометр для плёночного Зоркого-С, у которого нет своего замера света. Сфотографируйте сюжет телефоном: страница возьмёт из снимка замер телефона и пересчитает его в выдержку и диафрагму для вашей плёнки и объектива. Она подскажет пару под сюжет (портрет, движение, пейзаж) и объяснит, почему выбрала именно её.</p>
@@ -352,6 +352,7 @@ input.fnum:hover{border-color:var(--line)}
       <div class="row" id="jActs" hidden>
         <button class="btn" type="button" id="jExport">Сохранить журнал файлом</button>
         <button class="btn" type="button" id="jAudio">Выгрузить голосовые записи</button>
+        <button class="btn" type="button" id="jText">Скачать расшифровку</button>
         <button class="btn" type="button" id="jDelRoll">Удалить плёнку</button>
         <button class="btn" type="button" id="jClear">Очистить весь журнал</button>
       </div>
@@ -389,6 +390,7 @@ input.fnum:hover{border-color:var(--line)}
           <li>Если говорить неудобно, нажмите «Без голоса» и допишите заметку позже.</li>
           <li>Поставили на камере другую пару, чем советовала страница? Исправьте поле «Снято на самом деле». Номер кадра тоже можно поправить, чтобы он совпадал со счётчиком Зоркого.</li>
           <li>Когда придут сканы, откройте у каждого кадра «Итог по скану»: удачно, так себе или брак, и что пошло не так. Сверху журнал покажет, какие ошибки повторяются и на каких кадрах, и подскажет, что поменять.</li>
+          <li>Пока вы говорите, телефон сам переводит речь в текст: он появится в поле «Расшифровка голоса», его можно поправить. Если расшифровки нет, надиктуйте текст с клавиатуры (значок микрофона). «Скачать расшифровку» сохраняет все кадры плёнки одним текстовым файлом.</li>
           <li>Записи хранятся только на этом телефоне. Чтобы не потерять их, нажмите «Сохранить журнал файлом»: получится одна страница со всеми заметками и голосом, её можно открыть на любом устройстве.</li>
         </ol>
       </section>
@@ -1293,7 +1295,7 @@ async function addFrame(a){
   const roll = curRoll() || await newRoll();
   const snap = a ? a.snap : snapshot();
   const f={id:"f"+Date.now()+Math.random().toString(36).slice(2,6), roll:roll.id, n:nextN(), at:a?a.at:Date.now(), snap, shot:snap.pair,
-    audio:a?a.buf:null, mime:a?a.mime:"", dur:a?a.dur:0, note:"", result:"", probs:[], lesson:""};
+    audio:a?a.buf:null, mime:a?a.mime:"", dur:a?a.dur:0, text:a&&a.text||"", note:"", result:"", probs:[], lesson:""};
   await DB.put("frames",f);
   J.frames.push(f); J.frames.sort(byN);
   jRender();
@@ -1303,6 +1305,45 @@ async function addFrame(a){
 function pickMime(){
   for(const m of ["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus"]){ try{ if(MediaRecorder.isTypeSupported(m)) return m; }catch(e){} }
   return "";
+}
+
+// Расшифровка речи средствами браузера (Safari и Chrome), параллельно с записью звука.
+function startSR(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return null;
+  const st={finals:[], interim:"", on:true, ended:null, rec:null, failed:""};
+  const begin=()=>{
+    let r; try{ r=new SR(); }catch(e){ st.failed="init"; return; }
+    r.lang="ru-RU"; r.continuous=true; r.interimResults=true;
+    let base=st.finals.length;
+    r.onresult=e=>{
+      let interim="";
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const t=e.results[i][0].transcript;
+        if(e.results[i].isFinal) st.finals.push(t.trim()); else interim+=t;
+      }
+      st.interim=interim.trim();
+    };
+    r.onerror=e=>{ if(e && (e.error==="not-allowed"||e.error==="service-not-allowed")) { st.failed=e.error; st.on=false; } };
+    r.onend=()=>{
+      if(st.interim){ st.finals.push(st.interim); st.interim=""; }
+      if(st.on){ setTimeout(()=>{ if(st.on) begin(); },150); }
+      else if(st.ended){ st.ended(); st.ended=null; }
+    };
+    st.rec=r;
+    try{ r.start(); }catch(e){ st.failed="start"; }
+  };
+  begin();
+  return st;
+}
+function stopSR(st){
+  if(!st) return Promise.resolve("");
+  return new Promise(res=>{
+    const done=()=>res(st.finals.concat(st.interim?[st.interim]:[]).join(" ").replace(/\s+/g," ").trim());
+    st.on=false; st.ended=done;
+    try{ st.rec && st.rec.stop(); }catch(e){ done(); }
+    setTimeout(()=>{ if(st.ended){ st.ended=null; done(); } },2000);
+  });
 }
 
 async function toggleRec(){
@@ -1321,17 +1362,18 @@ async function toggleRec(){
   mr.onstop=async()=>{
     stream.getTracks().forEach(t=>t.stop());
     const cur=J.rec; if(cur){ clearInterval(cur.timer); clearTimeout(cur.limit); }
+    const text = cur ? await stopSR(cur.sr) : "";
     const dur = cur ? (Date.now()-cur.start)/1000 : 0;
     J.rec=null; recUI();
     const type=mr.mimeType||mime||"audio/mp4";
     const blob=new Blob(chunks,{type});
     if(!blob.size){ recMsg("Запись получилась пустой. Попробуйте ещё раз.", true); return; }
     try{
-      const f=await addFrame({buf:await blob.arrayBuffer(), mime:type, dur, snap, at});
-      recMsg(`Кадр ${f.n} в журнале: ${f.shot}, голос ${fmtDur(f.dur)}. Не забудьте взвести затвор.`);
+      const f=await addFrame({buf:await blob.arrayBuffer(), mime:type, dur, snap, at, text});
+      recMsg(`Кадр ${f.n} в журнале: ${f.shot}, голос ${fmtDur(f.dur)}${text?", расшифровка готова":", расшифровать не удалось — можно надиктовать текст с клавиатуры"}. Не забудьте взвести затвор.`);
     }catch(e){ recMsg("Не получилось сохранить запись в память телефона.", true); }
   };
-  J.rec={mr, start:Date.now(), timer:setInterval(recUI,500), limit:setTimeout(()=>{ try{ mr.state!=="inactive"&&mr.stop(); }catch(e){} },180000)};
+  J.rec={mr, sr:startSR(), start:Date.now(), timer:setInterval(recUI,500), limit:setTimeout(()=>{ try{ mr.state!=="inactive"&&mr.stop(); }catch(e){} },180000)};
   mr.start();
   recMsg("Идёт запись. Расскажите, что снимаете, где стоите и почему такая пара. Нажмите ещё раз, чтобы закончить.");
   recUI();
@@ -1368,6 +1410,7 @@ function frameCard(f){
     <div class="fmeta">Совет: ${esc(s.pair)}${s.manual?" (пара выбрана вручную)":""} · ${esc(s.lens)} · ISO ${esc(s.iso)} · EV₁₀₀ ${fmt1(s.ev100||0)}${s.comp?` · корр. ${fmtThirds(s.comp)}`:""} · ${esc(s.src)}</div>
     <label class="field"><span class="label">Снято на самом деле</span><input type="text" data-k="shot"></label>
     ${url?`<audio controls preload="metadata" src="${url}"></audio><span class="fmeta">Голос ${fmtDur(f.dur)} · <button type="button" class="linkbtn fshare">Поделиться записью</button></span>`:`<span class="fhint">Без голосовой заметки</span>`}
+    ${f.audio?`<label class="field"><span class="label">Расшифровка голоса</span><textarea data-k="text" placeholder="Расшифровки нет. Можно надиктовать: значок микрофона на клавиатуре"></textarea></label>`:""}
     <label class="field"><span class="label">Заметка</span><textarea data-k="note" placeholder="Что снимала, какой хотела получить кадр"></textarea></label>
     <details${f.result||f.lesson||(f.probs&&f.probs.length)?" open":""}><summary>Итог по скану</summary>
       <div class="field"><span class="label">Как вышло</span><div class="res">${Object.entries(J_RES).map(([k,v])=>`<button type="button" data-res="${k}">${v}</button>`).join("")}</div></div>
@@ -1434,6 +1477,7 @@ function jRender(){
   if(r && document.activeElement!==$("jName")) $("jName").value=r.name;
   $("jExport").disabled=!J.frames.length;
   $("jAudio").disabled=!J.frames.some(f=>f.audio);
+  $("jText").disabled=!J.frames.length;
   jSummary();
   const list=$("jList"); list.innerHTML="";
   J.frames.slice().reverse().forEach(f=>list.appendChild(frameCard(f)));
@@ -1480,6 +1524,7 @@ async function jExport(){
 <p class="m">${fmtAt(f.at)} · ${esc(s.scene)} · совет ${esc(s.pair)} · ${esc(s.lens)} · ISO ${esc(s.iso)} · EV₁₀₀ ${fmt1(s.ev100||0)} · ${esc(s.src)}</p>
 <p><b>Снято:</b> ${esc(f.shot||s.pair)}</p>
 ${f.audio?`<audio controls src="data:${esc(f.mime||"audio/mp4")};base64,${b64(f.audio)}"></audio>`:""}
+${f.text?`<p><b>Расшифровка:</b> ${esc(f.text)}</p>`:""}
 ${f.note?`<p><b>Заметка:</b> ${esc(f.note)}</p>`:""}
 ${(f.probs||[]).length?`<p><b>Что не так:</b> ${f.probs.map(k=>J_PROB[k]).join(", ")}</p>`:""}
 ${f.lesson?`<p><b>Вывод:</b> ${esc(f.lesson)}</p>`:""}</article>`;
@@ -1512,6 +1557,28 @@ async function shareFiles(files, title){
     await new Promise(r=>setTimeout(r,300));
   }
 }
+$("jText").addEventListener("click",()=>{
+  const r=curRoll(); const fr=J.frames.slice().sort(byN); if(!r||!fr.length) return;
+  const lines=[r.name, ""];
+  let withText=0;
+  for(const f of fr){
+    const s=f.snap||{};
+    lines.push(`Кадр ${f.n} — ${fmtAt(f.at)} · ${s.scene||""}`);
+    lines.push(`Совет: ${s.pair||""} · ${s.lens||""} · ISO ${s.iso||""} · EV100 ${fmt1(s.ev100||0)} · ${s.src||""}`);
+    lines.push(`Снято: ${f.shot||s.pair||""}`);
+    if(f.text){ lines.push(`Расшифровка: ${f.text}`); withText++; }
+    else if(f.audio) lines.push(`Расшифровка: — (есть голосовая запись ${fmtDur(f.dur)} без расшифровки)`);
+    if(f.note) lines.push(`Заметка: ${f.note}`);
+    if(f.result) lines.push(`Итог: ${J_RES[f.result]}`);
+    if((f.probs||[]).length) lines.push(`Что не так: ${f.probs.map(k=>J_PROB[k]).join(", ")}`);
+    if(f.lesson) lines.push(`Вывод: ${f.lesson}`);
+    lines.push("");
+  }
+  const name=(r.name.replace(/[\\/:*?"<>|]+/g," ").trim()||"Журнал плёнки")+" — расшифровка.txt";
+  const file=new File(["\ufeff"+lines.join("\n")], name, {type:"text/plain"});
+  shareFiles([file], r.name).catch(()=>alert("Не получилось сохранить файл."));
+  if(!withText) recMsg("В файле пока нет расшифровок: у этих кадров текст не записан. Можно надиктовать его в поле «Расшифровка голоса».");
+});
 $("jAudio").addEventListener("click",()=>{
   const fr=J.frames.filter(f=>f.audio).sort(byN);
   if(!fr.length){ recMsg("На этой плёнке нет голосовых записей."); return; }
